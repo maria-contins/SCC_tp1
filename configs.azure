@@ -1,0 +1,38 @@
+RESOURCE_GROUP="scc-backend-rg-57503-51920-45464"
+APP_NAME="scc-backend-57503-51920-45464" # found in the POM
+
+#BLOB STORAGE
+DEPLOY_BLOB="Y" # Y or N
+STORAGE_ACCOUNT_NAME="storageaccountscc"
+CONTAINER_NAME="media"
+STORAGE_ACCOUNT_CONNECTION_STRING_VAR_NAME="storageAccountConnectionString"
+
+
+#COSMOS DB
+DEPLOY_DB="Y" # Y or N
+COSMOS_DB_ACCOUNT_NAME="scc-backend-db-57503-51920-45464"
+DATABASE_TYPE="MONGODB" #SQL or MONGODB
+DATABASE_NAME="RentalApp"
+CO_NAME="users" #Container name for "SQL" or collection name for Mongo
+
+#for "SQL" only
+DB_KEY_VAR_NAME="DB_KEY"
+DB_URI_VAR_NAME="CONNECTION_URL"
+DB_NAME_VAR_NAME="DB_NAME"
+
+
+#REDIS
+DEPLOY_CACHE="N" # Y or N
+REDIS_NAME=""
+REDIS_HOSTNAME_VAR_NAME="REDIS_HOSTNAME"
+REDIS_KEY_VAR_NAME="REDIS_KEY"
+
+#AZ_Functions
+DEPLOY_AZ_FUN="N" # Y or N
+AZ_FUN_APP_NAME="" #found in pom.xml of AZ_fun
+AZ_FUN_DIR="" #Assuming a dir inside the main folder with the azure functions code, where its pom is located
+
+#BLOB STORAGE REPLICA
+DEPLOY_REPLICA="N" # Y or N
+STORAGE_ACCOUNT_REPLICA_NAME=""
+STORAGE_ACCOUNT_REPLICA_CONNECTION_STRING_VAR_NAME=""
