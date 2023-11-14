@@ -26,7 +26,7 @@ import scc.exceptions.DuplicateException;
 import scc.exceptions.NotFoundException;
 import scc.utils.Hash;
 
-@Path("/rest/house/{id}/question")
+@Path("/house/{id}/question")
 public class QuestionResource {
 
     //CosmosDBLayer dataLayer;

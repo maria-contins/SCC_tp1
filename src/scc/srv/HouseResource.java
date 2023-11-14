@@ -4,6 +4,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import scc.data.MongoDBLayer;
+import scc.entities.House.Availability.Availability;
 import scc.entities.House.House;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.NotFoundException;
@@ -63,7 +64,17 @@ public class HouseResource {
         }
     }
 
-
+    @POST
+    @Path("/{id}/availability")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public House setAvailability(@PathParam("id") String id, Availability availability) {
+        try {
+            return dataLayer.setAvailability(id, availability);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } 
+    }
 	
 	
 }
