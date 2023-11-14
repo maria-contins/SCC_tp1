@@ -13,6 +13,7 @@ public class MainApplication extends Application
 	private Set<Object> singletons = new HashSet<Object>();
 	private Set<Class<?>> resources = new HashSet<Class<?>>();
 
+	// TODO create collections on startup
 	public MainApplication() {
 		MongoDBLayer dm = new MongoDBLayer();
 		singletons.add(dm);

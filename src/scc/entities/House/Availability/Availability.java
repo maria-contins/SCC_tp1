@@ -27,7 +27,7 @@ public class Availability {
         this.discountedPricePerNight = discountedPricePerNight;
     }
 
-    public String getHouseId() {
+   public String getHouseId() {
         return houseId;
     }
 
@@ -98,7 +98,7 @@ public class Availability {
         return Objects.hash(houseId, fromData, toData, pricePerNight, discountedPricePerNight);
     }
 
-    public AvailabilityDAO getDAO() {
+    public AvailabilityDAO toDAO() {
         return new AvailabilityDAO(houseId, fromData, toData, pricePerNight, discountedPricePerNight);
     }
 

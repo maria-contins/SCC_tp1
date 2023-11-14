@@ -17,8 +17,10 @@ import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 
+import scc.entities.House.Availability.Availability;
 import scc.entities.House.House;
 import scc.entities.House.HouseDAO;
+import scc.entities.House.Availability.AvailabilityDAO;
 import scc.entities.Question.Question;
 import scc.entities.Question.QuestionDAO;
 import scc.entities.User.Auth;
@@ -50,9 +52,9 @@ public class MongoDBLayer {
 
     // collections
     MongoCollection<UserDAO> users;
-
     MongoCollection<HouseDAO> houses;
     MongoCollection<QuestionDAO> questions;
+    MongoCollection<AvailabilityDAO> availability;
 
     //TODO: add picture checks to user
     //TODO: should one check house IDs?
@@ -65,9 +67,10 @@ public class MongoDBLayer {
         users = database.getCollection("users", UserDAO.class);
         houses = database.getCollection("houses", HouseDAO.class);
         questions = database.getCollection("questions", QuestionDAO.class);
+        availability = database.getCollection("availability", AvailabilityDAO.class);
     }
 
-
+    // AUX
 
     public List<User> getAllUsers() {
         List<User> us = new ArrayList<>();
@@ -76,6 +79,17 @@ public class MongoDBLayer {
         }
         return us;
     }
+
+   // searches for house with houseId availability
+    public List<Availability> getHouseAvailability(String houseId) {
+        List<Availability> as = new ArrayList<>();
+        for (AvailabilityDAO a : availability.find(eq("houseId", houseId))) {
+            as.add(a.toAvailability());
+        }
+        return as;
+    }
+
+    // USERS
 
     public User createUser(User user) throws DuplicateException, NotFoundException {
         try {
@@ -162,7 +176,7 @@ public class MongoDBLayer {
         // add to cache
     }
 
-    // Questions
+    // QUESTIONS
     public Question createQuestion(Question q) throws Exception {
             try {
             questions.insertOne(Question.toDAO(q));
@@ -215,7 +229,7 @@ public class MongoDBLayer {
         }
     }
 
-    // Houses TODO new ArrayList<>() is a placeholder for collection of availability
+    // HOUSES TODO new ArrayList<>() is a placeholder for collection of availability
 
     public House createHouse(House house) throws DuplicateException {
         try {
@@ -227,7 +241,11 @@ public class MongoDBLayer {
 
             house.setDeleted(false);
 
+            List<Availability> availabilityList = house.getAvailability();
+
             houses.insertOne(House.toDAO(house));
+            this.availability.insertMany(availabilityList.stream().map(Availability::toDAO).toList());
+
             //add to cache
 
             return house;
@@ -242,13 +260,14 @@ public class MongoDBLayer {
         // look for user in cache
         //if not found:
         HouseDAO houseDAO = houses.find(eq("id", id)).first();
+        List<Availability> availabilityList = getHouseAvailability(id);
 
         if (houseDAO == null || houseDAO.isDeleted())
             throw new NotFoundException();
 
         //add to cache
 
-        return (houseDAO.toHouse(new ArrayList<>()));
+        return (houseDAO.toHouse(availabilityList));
         // add + adequate exceptions
     }
 
@@ -263,14 +282,18 @@ public class MongoDBLayer {
                 houseUpdate.append("description", house.getDescription());
             if (house.getMedia() != null && !house.getMedia().isEmpty())
                 houseUpdate.append("media", house.getMedia());
+            if (house.getAvailability() != null && !house.getAvailability().isEmpty())
+                houseUpdate.append("availability", house.getAvailability());
 
             Document doc = new Document("$set", houseUpdate);
             houses.updateOne(new Document("id", id), doc);
 
-            House updatedHouse = Objects.requireNonNull(houses.find(eq("id", id)).first()).toHouse(new ArrayList<>());
+            List<Availability> availabilityList = getHouseAvailability(id);
+            availability.insertMany(house.getAvailability().stream().map(Availability::toDAO).toList());
+
             // update/add to cache
 
-            return updatedHouse;
+            return Objects.requireNonNull(houses.find(eq("id", id)).first()).toHouse(availabilityList);
         } catch (Exception e) {
             throw new NotFoundException();
         }
@@ -288,4 +311,6 @@ public class MongoDBLayer {
             return houseToDelete.toHouse(new ArrayList<>());
         }
     }
+
+    // RENTALS
 }
