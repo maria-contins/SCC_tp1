@@ -1,6 +1,8 @@
 package scc.entities.House;
 
 
+import scc.entities.House.Availability.Availability;
+
 import java.util.*;
 
 
@@ -11,8 +13,9 @@ public class House {
 	private String location;
 	private String description;
 	private List<String> media;
-
 	private boolean deleted;
+
+	private List<Availability> availability;
 
 	/*Associated with each house, it is also necessary to maintain the availability of the
 	house (when it is available for renting) and price for each period (periods can be
@@ -22,7 +25,7 @@ public class House {
 	public House() {
 	}
 
-	public House(String id, String name, String location, String description, List<String> media, boolean deleted) {
+	public House(String id, String name, String location, String description, List<String> media, boolean deleted, List<Availability> availability) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -30,6 +33,7 @@ public class House {
 		this.description = description;
 		this.media = media;
 		this.deleted = deleted;
+		this.availability = availability;
 	}
 
 	public String getId() {
@@ -77,6 +81,14 @@ public class House {
 
 	public void setDeleted(boolean deleted) {
 		this.deleted = deleted;
+	}
+
+	public List<Availability> getAvailability() {
+		return this.availability;
+	}
+
+	public void setAvailability(List<Availability> availability) {
+		this.availability = availability;
 	}
 
 	public static HouseDAO toDAO(House house) {

@@ -63,18 +63,6 @@ public class HouseResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
-
-    @POST
-    @Path("/{id}/availability")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public House setAvailability(@PathParam("id") String id, Availability availability) {
-        try {
-            return dataLayer.setAvailability(id, availability);
-        } catch (NotFoundException e) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        } 
-    }
 	
 	
 }

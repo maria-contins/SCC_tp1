@@ -56,9 +56,10 @@ public class MongoDBLayer {
 
     //TODO: add picture checks to user
     //TODO: should one check house IDs?
-    //String BlobStoreconnectionString = System.getenv("storageAccountConnectionString");
 
-    //BlobContainerClient containerClient = new BlobContainerClientBuilder().connectionString(BlobStoreconnectionString).containerName("media").buildClient();
+    String BlobStoreconnectionString = System.getenv("storageAccountConnectionString");
+
+    BlobContainerClient containerClient = new BlobContainerClientBuilder().connectionString(BlobStoreconnectionString).containerName("media").buildClient();
 
     public MongoDBLayer() {
         users = database.getCollection("users", UserDAO.class);
@@ -214,7 +215,7 @@ public class MongoDBLayer {
         }
     }
 
-    // Houses
+    // Houses TODO new ArrayList<>() is a placeholder for collection of availability
 
     public House createHouse(House house) throws DuplicateException {
         try {
@@ -247,7 +248,7 @@ public class MongoDBLayer {
 
         //add to cache
 
-        return (houseDAO.toHouse());
+        return (houseDAO.toHouse(new ArrayList<>()));
         // add + adequate exceptions
     }
 
@@ -266,7 +267,7 @@ public class MongoDBLayer {
             Document doc = new Document("$set", houseUpdate);
             houses.updateOne(new Document("id", id), doc);
 
-            House updatedHouse = Objects.requireNonNull(houses.find(eq("id", id)).first()).toHouse();
+            House updatedHouse = Objects.requireNonNull(houses.find(eq("id", id)).first()).toHouse(new ArrayList<>());
             // update/add to cache
 
             return updatedHouse;
@@ -284,7 +285,7 @@ public class MongoDBLayer {
         else {
             //remove from cache
             //scheduleDeleteTask
-            return houseToDelete.toHouse();
+            return houseToDelete.toHouse(new ArrayList<>());
         }
     }
 }
