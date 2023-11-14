@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import scc.data.MongoDBLayer;
-import scc.entities.*;
 import scc.utils.GenericExceptionMapper;
 
 import jakarta.ws.rs.core.Application;

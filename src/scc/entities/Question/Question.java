@@ -2,8 +2,16 @@ package scc.entities.Question;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 
+/*
+    * Question entity
+    * houses’ questions and replies. Each question must include the house it
+    * refers to, the user that posed the question and the text of the message.
+ */
 public class Question {
 
+    private String id;
+
+    private String Houseid;
     private String author;
     private String description;
     private String reply;

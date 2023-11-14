@@ -1,4 +1,4 @@
-	package scc.entities;
+	package scc.entities.Rental;
 
 public class Rental {
 	
