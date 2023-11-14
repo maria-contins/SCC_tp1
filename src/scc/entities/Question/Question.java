@@ -1,6 +1,8 @@
 package scc.entities.Question;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
+import scc.entities.User.User;
+import scc.entities.User.UserDAO;
 
 /*
     * Question entity
@@ -10,68 +12,92 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 public class Question {
 
     private String id;
+    private String HouseId;
+    private String authorId;
+    private String body;
+    private String repliedToId;
+    private boolean answered;
 
-    private String Houseid;
-    private String author;
-    private String description;
-    private String reply;
 
-
-    public Question(String author, String description) {
-        this.author = author;
-        this.description = description;
-        reply = ""; // no reply
+    public Question() {
     }
 
-    public Question(String author, String description, String reply) {
-        this.author = author;
-        this.description = description;
-        this.reply = reply;
+    public Question(String id, String houseId, String authorId, String body, String repliedToId) {
+        super();
+        this.id = id;
+        HouseId = houseId;
+        this.authorId = authorId;
+        this.body = body;
+        this.repliedToId = repliedToId;
+        this.answered = false;
     }
 
-
-    public String getAuthor() {
-        return author;
+    public String getId() {
+        return id;
     }
 
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String getDescription() {
-        return description;
+    public  String getHouseId() {
+        return HouseId;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setHouseId(String houseId) {
+        HouseId = houseId;
     }
 
-    public String getReply() {
-        return reply;
+    public String getAuthorId() {
+        return authorId;
     }
 
-    public void setReply(String reply) {
-        this.reply = reply;
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
     }
 
-    public void newReply(String reply) {
-        if(this.reply.equalsIgnoreCase("")) { // only works if there is no reply yet
-            setReply(reply);
-        }
+    public String getBody() {
+        return body;
     }
 
-    @BsonIgnore
-    public static QuestionDAO toDAO(Question q) {
-        return new QuestionDAO(q.author, q.description, q.reply);
+    public void setBody(String body) {
+        this.body = body;
     }
-    @BsonIgnore
-    public QuestionDAO toDAO() {
-        return new QuestionDAO(author, description, reply);
+
+    public boolean isAnswered() {
+        return answered;
+    }
+
+    public void setAnswered(boolean answered) {
+        this.answered = answered;
+    }
+
+    public String getRepliedToId() {
+        return repliedToId;
+    }
+
+    public void setRepliedToId(String repliedToId) {
+        this.repliedToId = repliedToId;
+    }
+
+    public boolean isReply() {
+        return repliedToId != null;
+    }
+
+    public static QuestionDAO toDAO(Question question) {
+        return new QuestionDAO( question.id, question.HouseId, question.authorId, question.body, question.repliedToId);
     }
 
     @Override
     public String toString() {
-        return "Question [author=" + author + ", description=" + description + ", reply=" + reply + "]";
+        return "Question{" +
+                "id='" + id + '\'' +
+                ", HouseId='" + HouseId + '\'' +
+                ", authorId='" + authorId + '\'' +
+                ", body='" + body + '\'' +
+                ", repliedToId='" + repliedToId + '\'' +
+                ", answered=" + answered +
+                '}';
     }
 
 }

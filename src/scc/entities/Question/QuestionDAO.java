@@ -3,120 +3,102 @@ package scc.entities.Question;
 import java.util.Objects;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
+import scc.entities.User.User;
+import scc.entities.User.UserDAO;
 
 public class QuestionDAO {
 
-    private String _id;
-    private String author;
-    private String description;
-    private String reply;
+    private String id;
+    private String HouseId;
+    private String authorId;
+    private String body;
+    private String repliedToId;
+    private boolean answered;
 
 
     public QuestionDAO() {
     }
 
-    public QuestionDAO(Question q) {
-        this(q.getAuthor(), q.getDescription(), q.getReply());
+    public QuestionDAO(String id, String houseId, String authorId, String body, String repliedToId) {
+        super();
+        this.id = id;
+        HouseId = houseId;
+        this.authorId = authorId;
+        this.body = body;
+        this.repliedToId = repliedToId;
+        this.answered = false;
     }
 
-    public QuestionDAO(String author, String description) {
-        this.author = author;
-        this.description = description;
-        reply = ""; // no reply
+    public String getId() {
+        return id;
     }
 
-    public QuestionDAO(String author, String description, String reply) {
-        this.author = author;
-        this.description = description;
-        this.reply = reply;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public String get_id() {
-        return _id;
+    public  String getHouseId() {
+        return HouseId;
     }
 
-    public void set_id(String _id) {
-        this._id = _id;
+    public void setHouseId(String houseId) {
+        HouseId = houseId;
     }
 
-    public String getAuthor() {
-        return author;
-    }
-    
-    public void setAuthor(String author) {
-        this.author = author;
+    public String getAuthorId() {
+        return authorId;
     }
 
-    public String getDescription() {
-        return description;
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public String getBody() {
+        return body;
     }
 
-    public String getReply() {
-        return reply;
+    public void setBody(String body) {
+        this.body = body;
     }
 
-    private void setReply(String reply) {
-        this.reply = reply;
+    public boolean isAnswered() {
+        return answered;
     }
 
-    public void newReply(String reply) {
-        if(this.reply.equalsIgnoreCase("")) { // only works if there is no reply yet
-            setReply(reply);
-        }
+    public void setAnswered(boolean answered) {
+        this.answered = answered;
     }
 
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        QuestionDAO other = (QuestionDAO) obj;
-        if (_id == null) {
-            if (other._id != null)
-                return false;
-        } else if (!_id.equals(other._id))
-            return false;
-        if (author == null) {
-            if (other.author != null)
-                return false;
-        } else if (!author.equals(other.author))
-            return false;
-        if (description == null) {
-            if (other.description != null)
-                return false;
-        } else if (!description.equals(other.description))
-            return false;
-        if (reply == null) {
-            if (other.reply != null)
-                return false;
-        } else if (!reply.equals(other.reply))
-            return false;
-        return true;
+    public String getRepliedToId() {
+        return repliedToId;
     }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(_id, author, description, reply);
+
+    public void setRepliedToId(String repliedToId) {
+        this.repliedToId = repliedToId;
     }
 
     @BsonIgnore
-    public Question toQuestion() {
-        return new Question(author, description, reply);
+    public static Question toQuestion(QuestionDAO questionDAO) {
+        return new Question(questionDAO.id, questionDAO.HouseId, questionDAO.authorId, questionDAO.body, questionDAO.repliedToId);
     }
 
     @Override
     public String toString() {
-        return "QuestionDAO [_id=" + _id + ", author=" + author + ", description=" + description + ", reply=" + reply
-                + "]";
+        return "QuestionDAO{" +
+                "id='" + id + '\'' +
+                ", HouseId='" + HouseId + '\'' +
+                ", authorId='" + authorId + '\'' +
+                ", body='" + body + '\'' +
+                ", repliedToId='" + repliedToId + '\'' +
+                ", answered=" + answered +
+                '}';
     }
 
-    
+    @BsonIgnore
+    public Question toQuestion() {
+        return new Question(id, HouseId, authorId, body, repliedToId);
+    }
+
+
+
 }
