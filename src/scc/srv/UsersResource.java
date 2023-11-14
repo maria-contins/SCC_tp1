@@ -49,8 +49,10 @@ public class UsersResource {
     public User createUser(User user) {
         try {
             return dataLayer.createUser(user);
-        } catch (DuplicateException | NotFoundException e) { // handle not found properly
+        } catch (DuplicateException e) { // handle not found properly
             throw new WebApplicationException(Response.Status.CONFLICT);
+        }catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (Exception e) {
             throw new WebApplicationException(e.getMessage(), Response.Status.FORBIDDEN);
         }

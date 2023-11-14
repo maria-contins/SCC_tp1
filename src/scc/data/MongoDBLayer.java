@@ -70,7 +70,7 @@ public class MongoDBLayer {
         availability = database.getCollection("availability", AvailabilityDAO.class);
     }
 
-    // AUX
+    // AUXILIARY METHODS
 
     public List<User> getAllUsers() {
         List<User> us = new ArrayList<>();
@@ -89,11 +89,21 @@ public class MongoDBLayer {
         return as;
     }
 
+    private boolean pictureExists(String photoId) {
+        return photoId.isEmpty() || containerClient.getBlobClient(photoId).exists();
+    }
+
+    private boolean houseExists(String houseId) {
+        return houses.find(eq("id", houseId)).first() != null;
+    }
+
     // USERS
 
     public User createUser(User user) throws DuplicateException, NotFoundException {
-        try {
             //check if pic exists else 404
+
+            if (!this.pictureExists(user.getPhotoId()))
+                throw new NotFoundException();
 
             UserDAO checkUser = users.find(eq("id", user.getId())).first();
             if (checkUser != null)
@@ -108,10 +118,6 @@ public class MongoDBLayer {
             //add to cache
 
             return user;
-        } catch (Exception e) {
-            throw new DuplicateException();
-            // add + adequate exceptions
-        }
     }
 
     public User deleteUser(String id) throws NotFoundException {
@@ -146,16 +152,26 @@ public class MongoDBLayer {
                 userUpdate.append("nickname", user.getNickname());
             if (user.getPassword() != null && !user.getPassword().isEmpty())
                 userUpdate.append("password", Hash.of(user.getPassword()));
-            if (user.getPhotoId() != null && !user.getPhotoId().isEmpty())
+            if (user.getPhotoId() != null && !user.getPhotoId().isEmpty()) {
+                if (!this.pictureExists(user.getPhotoId()))
+                    throw new NotFoundException();
                 userUpdate.append("photoId", user.getPhotoId());
+            }
+            if (user.getHouseIds() != null && !user.getHouseIds().isEmpty()) {
+                List<String> houseIds = user.getHouseIds();
+                for (String houseId : houseIds) {
+                    if (!this.houseExists(houseId))
+                        throw new NotFoundException();
+                }
+                userUpdate.append("houseIds", houseIds);
+            }
 
             Document doc = new Document("$set", userUpdate);
             users.updateOne(new Document("id", id), doc);
 
-            User updatedUser = Objects.requireNonNull(users.find(eq("id", id)).first()).toUser();
             // update/add to cache
 
-            return updatedUser;
+            return Objects.requireNonNull(users.find(eq("id", id)).first()).toUser();
         } catch (Exception e) {
             throw new NotFoundException();
         }
@@ -207,8 +223,7 @@ public class MongoDBLayer {
             try {
             QuestionDAO qDAO = questions.find(eq("_id", id)).first();
             if (qDAO == null) // or isDeleted?
-                throw new NotFoundException();         
-            qDAO.newReply(reply);
+                throw new NotFoundException();
             questions.insertOne(qDAO);
             //add to cache
 
@@ -244,7 +259,9 @@ public class MongoDBLayer {
             List<Availability> availabilityList = house.getAvailability();
 
             houses.insertOne(House.toDAO(house));
-            this.availability.insertMany(availabilityList.stream().map(Availability::toDAO).toList());
+
+            if (availabilityList != null && !availabilityList.isEmpty())
+                this.availability.insertMany(availabilityList.stream().map(Availability::toDAO).toList());
 
             //add to cache
 
@@ -289,7 +306,9 @@ public class MongoDBLayer {
             houses.updateOne(new Document("id", id), doc);
 
             List<Availability> availabilityList = getHouseAvailability(id);
-            availability.insertMany(house.getAvailability().stream().map(Availability::toDAO).toList());
+
+            if (house.getAvailability() != null && !house.getAvailability().isEmpty())
+                availability.insertMany(house.getAvailability().stream().map(Availability::toDAO).toList());
 
             // update/add to cache
 
