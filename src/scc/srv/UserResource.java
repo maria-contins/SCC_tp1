@@ -15,17 +15,17 @@ import java.util.UUID;
 
 
 @Path("/users")
-public class UsersResource {
+public class UserResource {
 
     //CosmosDBLayer dataLayer;
     MongoDBLayer dataLayer;
 
     //private static final boolean DEBUG = System.getenv("DEBUG").equals("1"); //retirando esta linha e a de cima funciona
 
-    public UsersResource() {
+    public UserResource() {
     }
     
-    public UsersResource(MongoDBLayer dm) {
+    public UserResource(MongoDBLayer dm) {
         this.dataLayer = dm;
     }
 

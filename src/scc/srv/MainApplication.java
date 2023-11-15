@@ -20,7 +20,7 @@ public class MainApplication extends Application
 		singletons.add(new HouseResource(dm));
 		singletons.add(new MediaResource());
 		singletons.add(new ControlResource());
-		singletons.add(new UsersResource(dm));
+		singletons.add(new UserResource(dm));
 		resources.add(GenericExceptionMapper.class);
 	}
 

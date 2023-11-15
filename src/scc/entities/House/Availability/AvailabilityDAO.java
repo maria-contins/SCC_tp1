@@ -40,7 +40,11 @@ public class AvailabilityDAO {
         return id;
     }
 
-    public void setId(String _id) {
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void set_Id(String _id) {
         this._id = _id;
     }
 
