@@ -334,10 +334,17 @@ public class MongoDBLayer {
 
     // RENTALS
 
-    public Rental createRental(String availabilityId) throws NotFoundException {
+    public Rental createRental(String houseId, String availabilityId, String userId) throws NotFoundException, ForbiddenException {
         AvailabilityDAO a = availability.find(eq("id", availabilityId)).first();
         if (a == null)
             throw new NotFoundException();
+
+        UserDAO owner = users.find(eq("id", userId)).first();
+        if (owner == null)
+            throw new NotFoundException();
+
+        if(!owner.getHouseIds().contains(houseId))
+            throw new ForbiddenException();
 
         String price = ( a.getPricePerNight().isEmpty() && a.getPricePerNight() == null) ? a.getDiscountedPricePerNight() : a.getPricePerNight();
 
@@ -350,8 +357,20 @@ public class MongoDBLayer {
     }
 
     //TODO if work change others
-    public Rental updateRental(String id, Rental rental) throws NotFoundException {
+    public Rental updateRental(String houseId, String rentalId, String userId, Rental rental) throws NotFoundException, ForbiddenException {
+        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+        if (houseDAO == null)
+            throw new NotFoundException();
+
+        UserDAO userDAO = users.find(new Document("id", userId)).first();
+        if (userDAO == null)
+            throw new NotFoundException();
+
+        if(!userDAO.getHouseIds().contains(houseId))
+            throw new ForbiddenException();
+
             Document rentalUpdate = new Document();
+
             if (rental.getHouseId() != null && !rental.getHouseId().isEmpty())
                 rentalUpdate.append("houseId", rental.getHouseId());
             if (rental.getRenterId() != null && !rental.getRenterId().isEmpty())
@@ -365,7 +384,7 @@ public class MongoDBLayer {
 
 
             Document doc = new Document("$set", rentalUpdate);
-            RentalDAO result = rentals.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+            RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
             // update/add to cache
             if (result == null)

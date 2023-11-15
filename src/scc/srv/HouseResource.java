@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.Response;
 import scc.data.MongoDBLayer;
 import scc.entities.House.House;
 import scc.entities.Question.Question;
+import scc.entities.Rental.Rental;
 import scc.exceptions.*;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
@@ -97,4 +98,43 @@ public class HouseResource {
     }
 	
 	// RENTALS
+
+    @GET
+    @Path("/{id}/rentals")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Rental> listRentals(@PathParam("id") String id) {
+        try {
+            return dataLayer.listRentals(id);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+    @POST
+    @Path("/{id}/rentals")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Rental createRental(@PathParam("id") String id, String availabilityId, String userId) {
+        try {
+            return dataLayer.createRental(availabilityId, userId, userId);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+    }
+
+    @PATCH
+    @Path("/{id}/rentals/{rentalId}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Rental updateRental(@PathParam("id") String id, @PathParam("rentalId") String rentalId, String userId, Rental rental) {
+        try {
+            return dataLayer.updateRental(id, rentalId, userId, rental);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+    }
 }
