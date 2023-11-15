@@ -184,17 +184,44 @@ public class MongoDBLayer {
     }
 
     // QUESTIONS
-    public Question createQuestion(Question question) throws NotFoundException, ForbiddenException {
+    public Question createQuestion(String houseId, Question question) throws NotFoundException, ForbiddenException, DuplicateException {
 
         if (question.getRepliedToId() != null && !question.getRepliedToId().isEmpty()) {
-            QuestionDAO repliedTo = questions.find(eq("_id", question.getRepliedToId())).first();
+            QuestionDAO repliedTo = questions.find(eq("id", question.getRepliedToId())).first();
             if (repliedTo == null)
                 throw new NotFoundException();
+
+            if (!repliedTo.getRepliedToId().isEmpty())
+                throw new ForbiddenException();
+
+            if (repliedTo.getId().equals(question.getId()))
+                throw new DuplicateException();
 
             if (repliedTo.isAnswered())
                 throw new ForbiddenException();
 
-            questions.updateOne(new Document("_id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
+            UserDAO replier = users.find(eq("id", question.getAuthorId())).first();
+            if (replier == null || replier.isDeleted())
+                throw new NotFoundException();
+
+            questions.updateOne(new Document("id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
+
+            questions.insertOne(Question.toDAO(question));
+
+            //add to cache
+        } else {
+            // Here it needs verification. When replying, we can assume that the houseId of the user was verified upon creation
+            HouseDAO houseDAO = houses.find(eq("id", question.getHouseId())).first();
+            if (houseDAO == null || houseDAO.isDeleted())
+                throw new NotFoundException();
+
+            QuestionDAO checkQuestion = questions.find(eq("id", question.getId())).first();
+            if (checkQuestion != null)
+                throw new DuplicateException();
+
+            UserDAO userDAO = users.find(eq("id", question.getAuthorId())).first();
+            if (userDAO == null || userDAO.isDeleted())
+                throw new NotFoundException();
 
             questions.insertOne(Question.toDAO(question));
 
@@ -226,11 +253,15 @@ public class MongoDBLayer {
 
             house.setDeleted(false);
 
-            houses.insertOne(House.toDAO(house));
-
             for (String i : house.getMedia())
                 if (!this.pictureExists(i))
                     throw new NotFoundException();
+
+            UserDAO userDAO = users.find(eq("id", house.getOwnerId())).first();
+            if (userDAO == null || userDAO.isDeleted())
+                throw new NotFoundException();
+
+        houses.insertOne(House.toDAO(house));
 
             //add to cache
 

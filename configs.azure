@@ -13,7 +13,7 @@ DEPLOY_DB="Y" # Y or N
 COSMOS_DB_ACCOUNT_NAME="scc-backend-db-57503"
 DATABASE_TYPE="MONGODB" #SQL or MONGODB
 DATABASE_NAME="RentalApp"
-CO_NAME="users" #Container name for "SQL" or collection name for Mongo
+CO_NAME="users;houses;rentals;questions"  #Container name for "SQL" or collection name for Mongo
 
 #for "SQL" only
 DB_KEY_VAR_NAME="DB_KEY"

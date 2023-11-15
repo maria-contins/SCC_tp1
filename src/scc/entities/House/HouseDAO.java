@@ -30,6 +30,7 @@ public class HouseDAO {
         this.location = location;
         this.description = description;
         this.media = media;
+        this.ownerId = ownerId;
     }
 
     public String get_id() {

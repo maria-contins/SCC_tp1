@@ -3,11 +3,13 @@ package scc.entities.Question;
 import java.util.Objects;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
+import org.bson.codecs.pojo.annotations.BsonProperty;
 import scc.entities.User.User;
 import scc.entities.User.UserDAO;
 
 public class QuestionDAO {
 
+    @BsonProperty("id")
     private String id;
     private String HouseId;
     private String authorId;

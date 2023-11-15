@@ -78,11 +78,13 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Question createQuestion(@PathParam("id") String id, Question question) {
         try {
-            return dataLayer.createQuestion(question);
+            return dataLayer.createQuestion(id, question);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (DuplicateException e) {
+            throw new WebApplicationException(Response.Status.CONFLICT);
         }
     }
 
