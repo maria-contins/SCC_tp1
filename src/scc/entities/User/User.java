@@ -16,19 +16,15 @@ public class User {
 
     private boolean deleted;
 
-    private List<String> houseIds;
-
     public User() {
     }
 
-    public User(String id, String nickname, boolean deleted, String password, String photoId, List<String> houseIds) {
+    public User(String id, String nickname, String password, String photoId) {
         super();
         this.id = id;
         this.nickname = nickname;
-        this.deleted = deleted;
         this.password = password;
         this.photoId = photoId;
-        this.houseIds = houseIds;
     }
 
     public String getId() {
@@ -55,10 +51,6 @@ public class User {
         return photoId;
     }
 
-    public List<String> getHouseIds() {
-        return houseIds;
-    }
-
     public void setId(String id) {
         this.id = id;
     }
@@ -75,12 +67,9 @@ public class User {
         this.photoId = photoId;
     }
 
-    public void setHouseIds(List<String> houseIds) {
-        this.houseIds = houseIds;
-    }
 
     public static UserDAO toDAO(User user) {
-        return new UserDAO( user.id, user.nickname, user.deleted, user.password, user.photoId, user.houseIds);
+        return new UserDAO( user.id, user.nickname, user.password, user.photoId);
     }
 
     @Override
@@ -91,7 +80,6 @@ public class User {
                 ", password='" + password + '\'' +
                 ", photoId='" + photoId + '\'' +
                 ", isDeleted=" + deleted +
-                ", houseIds=" + houseIds +
                 '}';
     }
 

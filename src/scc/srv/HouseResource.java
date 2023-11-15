@@ -111,12 +111,12 @@ public class HouseResource {
     }
 
     @POST
-    @Path("/{id}/rentals")
+    @Path("/{id}/rentals/availability") // availability post
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Rental createRental(@PathParam("id") String id, String availabilityId, String userId) {
+    public Rental createRental(@PathParam("id") String id, String userId, Rental rental) {
         try {
-            return dataLayer.createRental(availabilityId, userId, userId);
+            return dataLayer.createAvailable(id, userId, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
@@ -124,8 +124,9 @@ public class HouseResource {
         }
     }
 
+
     @PATCH
-    @Path("/{id}/rentals/{rentalId}")
+    @Path("/{id}/rentals/{rentalId}") // any rental
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Rental updateRental(@PathParam("id") String id, @PathParam("rentalId") String rentalId, String userId, Rental rental) {
@@ -137,4 +138,45 @@ public class HouseResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
     }
+
+
+    //TODO post /{id}/rentals/{rentalId}/renter vou arrendar recebe rental ID
+    @POST
+    @Path("/{id}/rentals/{rentalId}/renter") // any rental
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Rental createRenter(@PathParam("id") String id, @PathParam("rentalId") String rentalId, String userId) {
+        try {
+            return dataLayer.createRent(id, rentalId, userId);
+        } catch (Exception e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+    //TODO {id}/param loc = etv
+    @GET
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<House> getLocationHouses(@PathParam("id") String id, String location) {
+        try {
+            return dataLayer.getLocationHouses(id, location);
+        } catch (Exception e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+    //TODO {id}/param disc = yes
+    @GET
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<House> getDiscountHouses(@PathParam("id") String id) {
+        try {
+            return dataLayer.getDiscountHouses(id);
+        } catch (Exception e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
 }

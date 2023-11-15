@@ -116,4 +116,22 @@ public class UserResource {
     }
 
 
+    //TODO get {id}/houses
+
+    /*List of houses of a given user;*/
+    @GET
+    @Path("/{id}/houses")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getUserHouses(@PathParam("id") String id) {
+        try {
+            return dataLayer.getUserHouses(id);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+
+
+
+
 }

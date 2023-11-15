@@ -2,7 +2,6 @@ package scc.entities.House;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
-import scc.entities.House.Availability.Availability;
 import scc.entities.User.User;
 import scc.entities.User.UserDAO;
 
@@ -19,18 +18,18 @@ public class HouseDAO {
     private String description;
     private List<String> media;
     private boolean deleted;
+    private String ownerId;
 
     public HouseDAO() {
     }
 
-    public HouseDAO(String id, String name, String location, String description, List<String> media, boolean deleted) {
+    public HouseDAO(String id, String name, String location, String description, List<String> media, String ownerId) {
         this._id = id;
         this.id = id;
         this.name = name;
         this.location = location;
         this.description = description;
         this.media = media;
-        this.deleted = deleted;
     }
 
     public String get_id() {
@@ -88,9 +87,17 @@ public class HouseDAO {
         this.deleted = deleted;
     }
 
-    /*public static House toHouse(HouseDAO houseDAO) {
-        return new House( houseDAO.id, houseDAO.name, houseDAO.location, houseDAO.description, houseDAO.media, houseDAO.deleted);
-    }*/
+    public String getOwnerId() {
+        return this.ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public static House toHouse(HouseDAO houseDAO) {
+        return new House( houseDAO.id, houseDAO.name, houseDAO.location, houseDAO.description, houseDAO.media, houseDAO.ownerId);
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -112,7 +119,7 @@ public class HouseDAO {
     }
 
     @BsonIgnore
-    public House toHouse(List<Availability> availability) {
-        return new House(id, name, location, description, media, deleted, availability);
+    public House toHouse() {
+        return new House(id, name, location, description, media, ownerId);
     }
 }

@@ -1,7 +1,6 @@
 package scc.entities.House;
 
-
-import scc.entities.House.Availability.Availability;
+import scc.entities.Rental.Rental;
 
 import java.util.*;
 
@@ -14,8 +13,7 @@ public class House {
 	private String description;
 	private List<String> media;
 	private boolean deleted;
-
-	private List<Availability> availability;
+	private String ownerId;
 
 	/*Associated with each house, it is also necessary to maintain the availability of the
 	house (when it is available for renting) and price for each period (periods can be
@@ -25,15 +23,14 @@ public class House {
 	public House() {
 	}
 
-	public House(String id, String name, String location, String description, List<String> media, boolean deleted, List<Availability> availability) {
+	public House(String id, String name, String location, String description, List<String> media, String ownerId) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.location = location;
 		this.description = description;
 		this.media = media;
-		this.deleted = deleted;
-		this.availability = availability;
+		this.ownerId = ownerId;
 	}
 
 	public String getId() {
@@ -83,16 +80,16 @@ public class House {
 		this.deleted = deleted;
 	}
 
-	public List<Availability> getAvailability() {
-		return this.availability;
+	public String getOwnerId() {
+		return this.ownerId;
 	}
 
-	public void setAvailability(List<Availability> availability) {
-		this.availability = availability;
+	public void setOwnerId(String ownerId) {
+		this.ownerId = ownerId;
 	}
 
 	public static HouseDAO toDAO(House house) {
-		return new HouseDAO(house.id, house.name, house.location, house.description, house.media, house.deleted);
+		return new HouseDAO(house.id, house.name, house.location, house.description, house.media, house.ownerId);
 	}
 	
 	

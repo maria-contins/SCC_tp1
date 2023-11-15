@@ -20,19 +20,15 @@ public class UserDAO {
 
     private String photoId;
 
-    private List<String> houseIds;
-
     public UserDAO() {
     }
 
-    public UserDAO(String id, String nickname, boolean deleted, String password, String photoId, List<String> houseIds) {
+    public UserDAO(String id, String nickname, String password, String photoId) {
         this.id = id;
         this._id = id;
         this.nickname = nickname;
-        this.deleted = deleted;
         this.password = password;
         this.photoId = photoId;
-        this.houseIds = houseIds;
     }
 
     public String get_id() {
@@ -83,17 +79,10 @@ public class UserDAO {
         this.photoId = photoId;
     }
 
-    public List<String> getHouseIds() {
-        return houseIds;
-    }
-
-    public void setHouseIds(List<String> houseIds) {
-        this.houseIds = houseIds;
-    }
 
     @BsonIgnore
     public static User toUser(UserDAO userDAO) {
-        return new User( userDAO.id, userDAO.nickname, userDAO.deleted, userDAO.password, userDAO.photoId, userDAO.houseIds);
+        return new User( userDAO.id, userDAO.nickname, userDAO.password, userDAO.photoId);
     }
 
     @Override
@@ -101,23 +90,23 @@ public class UserDAO {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         UserDAO userDAO = (UserDAO) obj;
-        return Objects.equals(id, userDAO.id) && Objects.equals(nickname, userDAO.nickname) && Objects.equals(password, userDAO.password) && Objects.equals(photoId, userDAO.photoId) && houseIds.equals(userDAO.houseIds);
+        return Objects.equals(id, userDAO.id) && Objects.equals(nickname, userDAO.nickname) && Objects.equals(password, userDAO.password) && Objects.equals(photoId, userDAO.photoId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(_id, id, nickname, password, photoId, houseIds);
+        return Objects.hash(_id, id, nickname, password, photoId);
     }
 
     @Override
     public String toString() {
         return "UserDAO [_id=" + _id + ", id=" + id + ", nickname=" + nickname + ", password="
-                + password + ", photoId=" + photoId + ", houseIds=" + houseIds + "]";
+                + password + ", photoId=" + photoId + "]";
     }
 
     @BsonIgnore
     public User toUser() {
-        return new User(id, nickname, deleted, password, photoId, houseIds);
+        return new User(id, nickname, password, photoId);
     }
 
 

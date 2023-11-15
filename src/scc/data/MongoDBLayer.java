@@ -1,6 +1,6 @@
 package scc.data;
 
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.*;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import com.azure.storage.blob.BlobContainerClient;
@@ -14,16 +14,13 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
-import com.mongodb.client.result.UpdateResult;
 import jakarta.ws.rs.core.NewCookie;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 
-import scc.entities.House.Availability.Availability;
 import scc.entities.House.House;
 import scc.entities.House.HouseDAO;
-import scc.entities.House.Availability.AvailabilityDAO;
 import scc.entities.Question.Question;
 import scc.entities.Question.QuestionDAO;
 import scc.entities.Rental.Rental;
@@ -60,7 +57,6 @@ public class MongoDBLayer {
     MongoCollection<UserDAO> users;
     MongoCollection<HouseDAO> houses;
     MongoCollection<QuestionDAO> questions;
-    MongoCollection<AvailabilityDAO> availability;
 
     MongoCollection<RentalDAO> rentals;
 
@@ -73,7 +69,6 @@ public class MongoDBLayer {
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
         questions = database.getCollection("questions", QuestionDAO.class);
-        availability = database.getCollection("availability", AvailabilityDAO.class);
     }
 
     // AUXILIARY METHODS
@@ -87,20 +82,20 @@ public class MongoDBLayer {
     }
 
    // searches for house with houseId availability
-    public List<Availability> getHouseAvailability(String houseId) {
-        List<Availability> as = new ArrayList<>();
-        for (AvailabilityDAO a : availability.find(eq("houseId", houseId))) {
-            as.add(a.toAvailability());
+    public List<Rental> getHouseAvailability(String houseId) {
+        List<Rental> as = new ArrayList<>();
+        for (RentalDAO a : rentals.find(eq("houseId", houseId))) {
+            as.add(RentalDAO.toRental(a));
         }
         return as;
     }
 
     private boolean pictureExists(String photoId) {
-        return photoId.isEmpty() || containerClient.getBlobClient(photoId).exists();
+        return !photoId.isEmpty() && containerClient.getBlobClient(photoId).exists();
     }
 
     private boolean houseExists(String houseId) {
-        return houses.find(eq("id", houseId)).first() != null;
+        return houses.find(eq("id", houseId)).first() == null;
     }
 
     // USERS
@@ -151,42 +146,21 @@ public class MongoDBLayer {
         return UserDAO.toUser(userDAO);
     }
 
-    // TODO user not found=
     public User updateUser(String id, User user) throws NotFoundException {
-        //try {
-            Document userUpdate = new Document();
-            if (user.getNickname() != null && !user.getNickname().isEmpty())
-                userUpdate.append("nickname", user.getNickname());
-            if (user.getPassword() != null && !user.getPassword().isEmpty())
-                userUpdate.append("password", Hash.of(user.getPassword()));
-            if (user.getPhotoId() != null && !user.getPhotoId().isEmpty()) {
-                if (!this.pictureExists(user.getPhotoId()))
-                    throw new NotFoundException();
-                userUpdate.append("photoId", user.getPhotoId());
-            }
-            if (user.getHouseIds() != null && !user.getHouseIds().isEmpty()) {
-                List<String> houseIds = user.getHouseIds();
-                for (String houseId : houseIds) {
-                    if (!this.houseExists(houseId))
-                        throw new NotFoundException();
-                }
-                userUpdate.append("houseIds", houseIds);
-            }
-
-            Document doc = new Document("$set", userUpdate);
-            /*users.updateOne(new Document("id", id), doc);
-
-            // update/add to cache
-
-            return Objects.requireNonNull(users.find(eq("id", id)).first()).toUser();
-        } catch (Exception e) {
-            throw new NotFoundException();
+        Document userUpdate = new Document();
+        if (user.getNickname() != null && !user.getNickname().isEmpty())
+            userUpdate.append("nickname", user.getNickname());
+        if (user.getPassword() != null && !user.getPassword().isEmpty())
+            userUpdate.append("password", Hash.of(user.getPassword()));
+        if (user.getPhotoId() != null && !user.getPhotoId().isEmpty()) {
+            if (this.pictureExists(user.getPhotoId()))
+                throw new NotFoundException();
+            userUpdate.append("photoId", user.getPhotoId());
         }
 
-        Document doc = new Document("$set", rentalUpdate);
-        RentalDAO result = rentals.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));*/
+        Document doc = new Document("$set", userUpdate);
 
-            UserDAO result = users.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+        UserDAO result = users.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
         // update/add to cache
         if (result == null)
             throw new NotFoundException();
@@ -220,10 +194,6 @@ public class MongoDBLayer {
             if (repliedTo.isAnswered())
                 throw new ForbiddenException();
 
-            UserDAO author = users.find(eq("id", question.getAuthorId())).first();
-            if (!author.getHouseIds().contains(repliedTo.getHouseId()))
-                throw new ForbiddenException();
-
             questions.updateOne(new Document("_id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
 
             questions.insertOne(Question.toDAO(question));
@@ -235,7 +205,7 @@ public class MongoDBLayer {
     }
 
     public List<Question> listQuestions(String houseId) throws NotFoundException {
-        if(!this.houseExists(houseId))
+        if(this.houseExists(houseId))
             throw new NotFoundException();
 
         List<Question> qs = new ArrayList<>();
@@ -249,7 +219,6 @@ public class MongoDBLayer {
     // HOUSES
 
     public House createHouse(House house) throws DuplicateException, NotFoundException {
-            //check if pic exists else 404
 
             HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
             if (checkHouse != null && !checkHouse.isDeleted())
@@ -257,16 +226,11 @@ public class MongoDBLayer {
 
             house.setDeleted(false);
 
-            List<Availability> availabilityList = house.getAvailability();
-
             houses.insertOne(House.toDAO(house));
 
             for (String i : house.getMedia())
                 if (!this.pictureExists(i))
                     throw new NotFoundException();
-
-            if (availabilityList != null && !availabilityList.isEmpty())
-                this.availability.insertMany(availabilityList.stream().map(Availability::toDAO).toList());
 
             //add to cache
 
@@ -278,45 +242,40 @@ public class MongoDBLayer {
         // look for user in cache
         //if not found:
         HouseDAO houseDAO = houses.find(eq("id", id)).first();
-        List<Availability> availabilityList = getHouseAvailability(id);
 
         if (houseDAO == null || houseDAO.isDeleted())
             throw new NotFoundException();
 
         //add to cache
 
-        return (houseDAO.toHouse(availabilityList));
+        return (houseDAO.toHouse());
         // add + adequate exceptions
     }
 
     public House updateHouse(String id, House house) throws NotFoundException {
-        try {
-            Document houseUpdate = new Document();
-            if (house.getName() != null && !house.getName().isEmpty())
-                houseUpdate.append("name", house.getName());
-            if (house.getLocation() != null && !house.getLocation().isEmpty())
-                houseUpdate.append("location", house.getLocation());
-            if (house.getDescription() != null && !house.getDescription().isEmpty())
-                houseUpdate.append("description", house.getDescription());
-            if (house.getMedia() != null && !house.getMedia().isEmpty())
-                houseUpdate.append("media", house.getMedia());
-            if (house.getAvailability() != null && !house.getAvailability().isEmpty())
-                houseUpdate.append("availability", house.getAvailability());
 
-            Document doc = new Document("$set", houseUpdate);
-            houses.updateOne(new Document("id", id), doc);
+        Document houseUpdate = new Document();
+        if (house.getName() != null && !house.getName().isEmpty())
+            houseUpdate.append("name", house.getName());
+        if (house.getLocation() != null && !house.getLocation().isEmpty())
+            houseUpdate.append("location", house.getLocation());
+        if (house.getDescription() != null && !house.getDescription().isEmpty())
+            houseUpdate.append("description", house.getDescription());
+        if (house.getMedia() != null && !house.getMedia().isEmpty())
+            houseUpdate.append("media", house.getMedia());
 
-            List<Availability> availabilityList = getHouseAvailability(id);
+        Document doc = new Document("$set", houseUpdate);
+        houses.updateOne(new Document("id", id), doc);
 
-            if (house.getAvailability() != null && !house.getAvailability().isEmpty())
-                availability.insertMany(house.getAvailability().stream().map(Availability::toDAO).toList());
+        HouseDAO result = houses.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-            // update/add to cache
+        // update/add to cache
 
-            return Objects.requireNonNull(houses.find(eq("id", id)).first()).toHouse(availabilityList);
-        } catch (Exception e) {
+        if (result == null)
             throw new NotFoundException();
-        }
+
+        return HouseDAO.toHouse(result);
+
     }
 
 
@@ -328,35 +287,26 @@ public class MongoDBLayer {
         else {
             //remove from cache
             //scheduleDeleteTask
-            return houseToDelete.toHouse(new ArrayList<>());
+            return houseToDelete.toHouse();
         }
     }
 
     // RENTALS
 
-    public Rental createRental(String houseId, String availabilityId, String userId) throws NotFoundException, ForbiddenException {
-        AvailabilityDAO a = availability.find(eq("id", availabilityId)).first();
-        if (a == null)
+    public Rental createAvailable(String houseId, String userId, Rental rental) throws NotFoundException, ForbiddenException {
+        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+        if (houseDAO == null)
             throw new NotFoundException();
-
-        UserDAO owner = users.find(eq("id", userId)).first();
-        if (owner == null)
-            throw new NotFoundException();
-
-        if(!owner.getHouseIds().contains(houseId))
+        if (!Objects.equals(houseDAO.getOwnerId(), userId))
             throw new ForbiddenException();
 
-        String price = ( a.getPricePerNight().isEmpty() && a.getPricePerNight() == null) ? a.getDiscountedPricePerNight() : a.getPricePerNight();
+        rental.setFree(true);
 
-        RentalDAO rentalDAO = new RentalDAO(a.getHouseId(), "", price, a.getFromData(), a.getToData());
+        rentals.insertOne(Rental.toDAO(rental));
 
-        availability.deleteOne(eq("id",availabilityId));
-
-        rentals.insertOne(rentalDAO);
-        return RentalDAO.toRental(rentalDAO);
+        return rental;
     }
 
-    //TODO if work change others
     public Rental updateRental(String houseId, String rentalId, String userId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
         if (houseDAO == null)
@@ -366,10 +316,8 @@ public class MongoDBLayer {
         if (userDAO == null)
             throw new NotFoundException();
 
-        if(!userDAO.getHouseIds().contains(houseId))
-            throw new ForbiddenException();
 
-            Document rentalUpdate = new Document();
+        Document rentalUpdate = new Document();
 
             if (rental.getHouseId() != null && !rental.getHouseId().isEmpty())
                 rentalUpdate.append("houseId", rental.getHouseId());
@@ -381,7 +329,10 @@ public class MongoDBLayer {
                 rentalUpdate.append("fromDate", rental.getFromDate());
             if (rental.getToDate() != null && !rental.getToDate().isEmpty())
                 rentalUpdate.append("toDate", rental.getToDate());
-
+            if (rental.getDiscount() != null && !rental.getDiscount().isEmpty())
+                rentalUpdate.append("discount", rental.getDiscount());
+            if (rental.getOwnerId() != null && !rental.getOwnerId().isEmpty())
+                rentalUpdate.append("ownerId", rental.getOwnerId());
 
             Document doc = new Document("$set", rentalUpdate);
             RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
@@ -403,5 +354,62 @@ public class MongoDBLayer {
             rentalsList.add(RentalDAO.toRental(rental));
         }
         return rentalsList;
+    }
+
+    public Rental createRent(String houseId, String rentalId, String userId) throws NotFoundException, DuplicateException, ForbiddenException {
+        HouseDAO house = houses.find(eq(new Document("id", houseId))).first();
+        if (house == null)
+            throw new NotFoundException();
+
+        Document doc = new Document("renterId", userId);
+        doc.append("free", false);
+        RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId).append("houseId", houseId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+
+        // update/add to cache
+        if (result == null)
+            throw new NotFoundException();
+
+        return RentalDAO.toRental(result);
+    }
+
+    public List<House> getLocationHouses(String houseId, String location) throws NotFoundException {
+        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+
+        if (houseDAO == null)
+            throw new NotFoundException();
+
+        List<House> result = new ArrayList<>();
+        for (HouseDAO house : houses.find(eq("location", location))) {
+            result.add(HouseDAO.toHouse(house));
+        }
+
+        return result;
+    }
+
+    public List<House> getDiscountHouses(String houseId) throws NotFoundException {
+        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+
+        if (houseDAO == null)
+            throw new NotFoundException();
+
+        List<House> result = new ArrayList<>();
+        for (HouseDAO house : houses.find(ne("discount", ""))) {
+            result.add(HouseDAO.toHouse(house));
+        }
+
+        return result;
+    }
+
+    public List<String> getUserHouses(String id) throws NotFoundException {
+        UserDAO userDAO = users.find(new Document("id", id)).first();
+
+        if (userDAO == null)
+            throw new NotFoundException();
+
+        List<String> result = new ArrayList<>();
+        for (HouseDAO house : houses.find(eq("ownerId", id))) {
+            result.add(house.getId());
+        }
+        return result;
     }
 }

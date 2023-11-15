@@ -12,20 +12,31 @@ public class RentalDAO {
     private String houseId;
     private String renterId;;
     private String price;
+    private String discount;
     private String fromDate;
     private String toDate;
+    private boolean free;
 
     public RentalDAO() {
 
     }
 
-    public RentalDAO(String houseId, String renterId, String price, String fromDate, String toDate) {
+    public RentalDAO(String houseId, String renterId, String price, String discount, String fromDate, String toDate) {
         super();
         this.houseId = houseId;
         this.renterId = renterId;
         this.price = price;
+        this.discount = discount;
         this.fromDate = fromDate;
         this.toDate = toDate;
+    }
+
+    public boolean isFree() {
+        return free;
+    }
+
+    public void setFree(boolean free) {
+        this.free = free;
     }
 
     public String getId() {
@@ -35,6 +46,7 @@ public class RentalDAO {
     public void setId(String id) {
         this.id = id;
     }
+
 
     public String getHouseId() {
         return houseId;
@@ -56,8 +68,16 @@ public class RentalDAO {
         return price;
     }
 
+    public String getDiscount() {
+        return discount;
+    }
+
     public void setPrice(String price) {
         this.price = price;
+    }
+
+    public void setDiscount(String discount) {
+        this.discount = discount;
     }
 
     public void setFromDate(String fromDate) {
@@ -76,22 +96,14 @@ public class RentalDAO {
         return toDate;
     }
 
-    public void set_id(String _id) {
-        this._id = _id;
-    }
-
-    public String get_id() {
-        return _id;
-    }
-
     @BsonIgnore
     public static Rental toRental(RentalDAO rentalDAO) {
-        return new Rental(rentalDAO.id, rentalDAO.getHouseId(), rentalDAO.getRenterId(), rentalDAO.getPrice(), rentalDAO.getFromDate(), rentalDAO.getToDate());
+        return new Rental(rentalDAO.id, rentalDAO.getHouseId(), rentalDAO.getRenterId(), rentalDAO.getPrice(), rentalDAO.getDiscount(),rentalDAO.getFromDate(), rentalDAO.getToDate());
     }
 
     @BsonIgnore
     public static RentalDAO toDAO(Rental rental) {
-        return new RentalDAO(rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getFromDate(), rental.getToDate());
+        return new RentalDAO(rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getDiscount(), rental.getFromDate(), rental.getToDate());
     }
 
     @Override
