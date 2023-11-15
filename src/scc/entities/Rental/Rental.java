@@ -1,54 +1,83 @@
 	package scc.entities.Rental;
 
-public class Rental {
-	
-	private String houseName;
-	private String renter;
-	private int period;
-	private int price;
+	import scc.entities.House.House;
+	import scc.entities.House.HouseDAO;
+
+	public class Rental {
+
+	private String houseId;
+	private String renterId;;
+	private String price;
+	private String id;
+	private String fromDate;
+
+	private String toDate;
+
+	public Rental() {
+
+	}
 	
 	//Use house name or the actual instance ??
-	public Rental(String houseName, String userName, int period, int price) {
-		this.houseName = houseName;
-		this.renter = userName;
-		this.period = period;
+	public Rental(String id, String houseId, String renterId, String price, String fromDate, String toDate) {
+		super();
+		this.id = id;
+		this.houseId = houseId;
+		this.renterId = renterId;
+		this.price = price;
+		this.fromDate = fromDate;
+		this.toDate = toDate;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	
+	public String getHouseId() {
+		return houseId;
+	}
+
+	public void setHouseId(String houseId) {
+		this.houseId = houseId;
+	}
+
+	public String getRenterId() {
+		return renterId;
+	}
+
+	public void setRenterId(String renterId) {
+		this.renterId = renterId;
+	}
+
+	public String getPrice() {
+		return price;
+	}
+
+	public void setPrice(String price) {
 		this.price = price;
 	}
-	
-	
-	//GETTERS
-	
-	public String getHouseName() {
-		return this.houseName;
+
+	public void setFromDate(String fromDate) {
+		this.fromDate = fromDate;
 	}
-	
-	public String getRenter() {
-		return this.renter;
+
+	public String getFromDate() {
+		return fromDate;
 	}
-	
-	public int getPeriod() {
-		return this.period;
+
+	public void setToDate(String toDate) {
+		this.toDate = toDate;
 	}
-	
-	public int getPrice() {
-		return this.price;
+
+	public String getToDate() {
+		return toDate;
 	}
-	
-	//Setters
-	
-	public void setHouseName(String newName) {
-		this.houseName = newName;
-	}
-	
-	public void setRenter(String newRenter) {
-		this.renter = newRenter;
-	}
-	
-	public void setPeriod(int newPeriod) {
-		this.period = newPeriod;
-	}
-	
-	public void setPrice(int newPrice) {
-		this.price = newPrice;
+
+	public static RentalDAO toDAO(Rental rental) {
+		return new RentalDAO(rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getFromDate(), rental.getToDate());
 	}
 }

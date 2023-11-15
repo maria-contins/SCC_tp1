@@ -10,27 +10,38 @@ public class AvailabilityDAO {
 
     private String _id;
 
+    @BsonProperty
+    private String id;
     private String houseId;
 
     private String fromData;
 
     private String toData;
 
-    private double pricePerNight;
+    private String pricePerNight;
 
-    private double discountedPricePerNight;
+    private String discountedPricePerNight;
 
     public AvailabilityDAO() {
 
     }
 
-    public AvailabilityDAO(String houseId, String fromData, String toData, double pricePerNight, double discountedPricePerNight) {
+    public AvailabilityDAO(String id, String houseId, String fromData, String toData, String pricePerNight, String discountedPricePerNight) {
         super();
+        this.id = id;
         this.houseId = houseId;
         this.fromData = fromData;
         this.toData = toData;
         this.pricePerNight = pricePerNight;
         this.discountedPricePerNight = discountedPricePerNight;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String _id) {
+        this._id = _id;
     }
 
     public void set_id(String _id) {
@@ -65,19 +76,19 @@ public class AvailabilityDAO {
         this.toData = toData;
     }
 
-    public double getPricePerNight() {
+    public String getPricePerNight() {
         return pricePerNight;
     }
 
-    public void setPricePerNight(double pricePerNight) {
+    public void setPricePerNight(String pricePerNight) {
         this.pricePerNight = pricePerNight;
     }
 
-    public double getDiscountedPricePerNight() {
+    public String getDiscountedPricePerNight() {
         return discountedPricePerNight;
     }
 
-    public void setDiscountedPricePerNight(double discountedPricePerNight) {
+    public void setDiscountedPricePerNight(String discountedPricePerNight) {
         this.discountedPricePerNight = discountedPricePerNight;
     }
 
@@ -94,12 +105,12 @@ public class AvailabilityDAO {
 
     @BsonIgnore
     public static Availability toAvailability(AvailabilityDAO a) {
-        return new Availability(a.houseId, a.fromData, a.toData, a.pricePerNight, a.discountedPricePerNight);
+        return new Availability(a.id, a.houseId, a.fromData, a.toData, a.pricePerNight, a.discountedPricePerNight);
     }
 
     @BsonIgnore
     public Availability toAvailability() {
-        return new Availability(houseId, fromData, toData, pricePerNight, discountedPricePerNight);
+        return new Availability(id, houseId, fromData, toData, pricePerNight, discountedPricePerNight);
     }
 
 

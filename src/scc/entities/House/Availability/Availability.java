@@ -4,22 +4,24 @@ import java.util.Objects;
 
 public class Availability {
 
+    private String id;
     private String houseId;
 
     private String fromData;
 
     private String toData;
 
-    private double pricePerNight;
+    private String pricePerNight;
 
-    private double discountedPricePerNight;
+    private String discountedPricePerNight;
 
     public Availability() {
 
     }
 
-    public Availability(String houseId, String fromData, String toData, double pricePerNight, double discountedPricePerNight) {
+    public Availability(String id, String houseId, String fromData, String toData, String pricePerNight, String discountedPricePerNight) {
         super();
+        this.id = id;
         this.houseId = houseId;
         this.fromData = fromData;
         this.toData = toData;
@@ -27,7 +29,14 @@ public class Availability {
         this.discountedPricePerNight = discountedPricePerNight;
     }
 
-   public String getHouseId() {
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+    public String getHouseId() {
         return houseId;
     }
 
@@ -51,47 +60,24 @@ public class Availability {
         this.toData = toData;
     }
 
-    public double getPricePerNight() {
+    public String getPricePerNight() {
         return pricePerNight;
     }
 
-    public void setPricePerNight(double pricePerNight) {
+    public void setPricePerNight(String pricePerNight) {
         this.pricePerNight = pricePerNight;
     }
 
-    public double getDiscountedPricePerNight() {
+    public String getDiscountedPricePerNight() {
         return discountedPricePerNight;
     }
 
-    public void setDiscountedPricePerNight(double discountedPricePerNight) {
+    public void setDiscountedPricePerNight(String discountedPricePerNight) {
         this.discountedPricePerNight = discountedPricePerNight;
     }
 
     public String toString() {
-        return "Availability [houseId=" + houseId + ", fromData=" + fromData + ", toData=" + toData + ", pricePerNight=" + pricePerNight + ", discountedPricePerNight=" + discountedPricePerNight + "]";
-    }
-
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (!Availability.class.isAssignableFrom(obj.getClass())) {
-            return false;
-        }
-        final Availability other = (Availability) obj;
-        if (!Objects.equals(this.houseId, other.houseId)) {
-            return false;
-        }
-        if (!Objects.equals(this.fromData, other.fromData)) {
-            return false;
-        }
-        if (!Objects.equals(this.toData, other.toData)) {
-            return false;
-        }
-        if (this.pricePerNight != other.pricePerNight) {
-            return false;
-        }
-        return this.discountedPricePerNight == other.discountedPricePerNight;
+        return "Availability [Id ="+id+" houseId=" + houseId + ", fromData=" + fromData + ", toData=" + toData + ", pricePerNight=" + pricePerNight + ", discountedPricePerNight=" + discountedPricePerNight + "]";
     }
 
     public int hashCode() {
@@ -99,7 +85,7 @@ public class Availability {
     }
 
     public AvailabilityDAO toDAO() {
-        return new AvailabilityDAO(houseId, fromData, toData, pricePerNight, discountedPricePerNight);
+        return new AvailabilityDAO(id, houseId, fromData, toData, pricePerNight, discountedPricePerNight);
     }
 
 
