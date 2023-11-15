@@ -21,7 +21,7 @@ public class ControlResource
 	@Produces(MediaType.TEXT_PLAIN)
 	public String hello() {
 		//System.out.println("hello");
-		return "v: 0020";
+		return "v: 0030";
 	}
 
 }

@@ -4,10 +4,13 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import scc.data.MongoDBLayer;
-import scc.entities.House.Availability.Availability;
 import scc.entities.House.House;
-import scc.exceptions.DuplicateException;
+import scc.entities.Question.Question;
+import scc.exceptions.*;
+import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
+
+import java.util.List;
 
 @Path("/houses")
 public class HouseResource {
@@ -27,6 +30,8 @@ public class HouseResource {
             return dataLayer.createHouse(house);
         } catch (DuplicateException e) {
             throw new WebApplicationException(Response.Status.CONFLICT);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
 
@@ -63,6 +68,33 @@ public class HouseResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
+
+    // QUESTIONS
+
+    @POST
+    @Path("/{id}/questions")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Question createQuestion(@PathParam("id") String id, Question question) {
+        try {
+            return dataLayer.createQuestion(question);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+    }
+
+    @GET
+    @Path("/{id}/questions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Question> listQuestion(@PathParam("id") String id) {
+        try {
+            return dataLayer.listQuestions(id);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
 	
-	
+	// RENTALS
 }

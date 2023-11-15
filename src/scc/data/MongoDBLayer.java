@@ -27,6 +27,7 @@ import scc.entities.User.Auth;
 import scc.entities.User.User;
 import scc.entities.User.UserDAO;
 import scc.exceptions.DuplicateException;
+import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
 import scc.utils.Hash;
 
@@ -193,61 +194,45 @@ public class MongoDBLayer {
     }
 
     // QUESTIONS
-    public Question createQuestion(Question q) throws Exception {
-            try {
-            questions.insertOne(Question.toDAO(q));
-            //add to cache
+    public Question createQuestion(Question question) throws NotFoundException, ForbiddenException {
 
-            return q;
-        } catch (Exception e) {
-            throw new Exception();
-            // add + adequate exceptions
-        }
-    }
-
-    public Question readQuestion(String id) throws Exception {
-            try {
-            QuestionDAO qDAO = questions.find(eq("_id", id)).first();
-            if (qDAO == null) // or isDeleted?
-                throw new NotFoundException(); 
-            //add to cache        
-            return (qDAO.toQuestion());
-        } catch (Exception e) {
-            throw new Exception();
-            // add + adequate exceptions
-        }
-    }
-
-
-    public String replyQuestion(String id, String reply) throws Exception {
-            try {
-            QuestionDAO qDAO = questions.find(eq("_id", id)).first();
-            if (qDAO == null) // or isDeleted?
+        if (question.getRepliedToId() != null && !question.getRepliedToId().isEmpty()) {
+            QuestionDAO repliedTo = questions.find(eq("_id", question.getRepliedToId())).first();
+            if (repliedTo == null)
                 throw new NotFoundException();
-            questions.insertOne(qDAO);
-            //add to cache
 
-            return reply;
-        } catch (Exception e) {
-            throw new Exception();
-            // add + adequate exceptions
+            if (repliedTo.isAnswered())
+                throw new ForbiddenException();
+
+            UserDAO author = users.find(eq("id", question.getAuthorId())).first();
+            if (!author.getHouseIds().contains(repliedTo.getHouseId()))
+                throw new ForbiddenException();
+
+            questions.updateOne(new Document("_id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
+
+            questions.insertOne(Question.toDAO(question));
+
+            //add to cache
         }
+
+        return question;
     }
 
-    public List<Question> listHouseQuestions() throws Exception {
-        try {
-            //TODO
-            return null;
-        } catch (Exception e) {
-            throw new Exception();
-            // add + adequate exceptions
+    public List<Question> listQuestions(String houseId) throws NotFoundException {
+        if(!this.houseExists(houseId))
+            throw new NotFoundException();
+
+        List<Question> qs = new ArrayList<>();
+        for (QuestionDAO q : questions.find(eq("houseId", houseId))) {
+            qs.add(q.toQuestion());
         }
+
+        return qs;
     }
 
     // HOUSES TODO new ArrayList<>() is a placeholder for collection of availability
 
-    public House createHouse(House house) throws DuplicateException {
-        try {
+    public House createHouse(House house) throws DuplicateException, NotFoundException {
             //check if pic exists else 404
 
             HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
@@ -260,16 +245,16 @@ public class MongoDBLayer {
 
             houses.insertOne(House.toDAO(house));
 
+            for (String i : house.getMedia())
+                if (!this.pictureExists(i))
+                    throw new NotFoundException();
+
             if (availabilityList != null && !availabilityList.isEmpty())
                 this.availability.insertMany(availabilityList.stream().map(Availability::toDAO).toList());
 
             //add to cache
 
             return house;
-        } catch (DuplicateException e) {
-            throw new DuplicateException();
-            // add + adequate exceptions
-        }
     }
 
     public House getHouse(String id) throws NotFoundException {
