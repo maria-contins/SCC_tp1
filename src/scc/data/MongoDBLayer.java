@@ -26,6 +26,7 @@ import scc.entities.Question.QuestionDAO;
 import scc.entities.Rental.Rental;
 import scc.entities.Rental.RentalDAO;
 import scc.entities.User.Auth;
+import scc.entities.User.Renter;
 import scc.entities.User.User;
 import scc.entities.User.UserDAO;
 import scc.exceptions.DuplicateException;
@@ -324,12 +325,12 @@ public class MongoDBLayer {
 
     // RENTALS
 
-    public Rental createAvailable(String houseId, String userId, Rental rental) throws NotFoundException, ForbiddenException {
+    public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
         if (houseDAO == null)
             throw new NotFoundException();
-        if (!Objects.equals(houseDAO.getOwnerId(), userId))
-            throw new ForbiddenException();
+        //if (!houseDAO.getOwnerId().equals(userId)) cookie
+            //throw new ForbiddenException();
 
         rental.setFree(true);
 
@@ -338,15 +339,16 @@ public class MongoDBLayer {
         return rental;
     }
 
-    public Rental updateRental(String houseId, String rentalId, String userId, Rental rental) throws NotFoundException, ForbiddenException {
+    public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
         if (houseDAO == null)
             throw new NotFoundException();
 
-        UserDAO userDAO = users.find(new Document("id", userId)).first();
-        if (userDAO == null)
-            throw new NotFoundException();
+        //UserDAO userDAO = users.find(new Document("id", userId)).first(); TODO COOKIE
+        //if (userDAO == null)
+            //throw new NotFoundException();
 
+        //add cookie user id verification
 
         Document rentalUpdate = new Document();
 
@@ -387,12 +389,12 @@ public class MongoDBLayer {
         return rentalsList;
     }
 
-    public Rental createRent(String houseId, String rentalId, String userId) throws NotFoundException, DuplicateException, ForbiddenException {
+    public Rental createRent(String houseId, String rentalId, Renter renter) throws NotFoundException, DuplicateException, ForbiddenException {
         HouseDAO house = houses.find(eq(new Document("id", houseId))).first();
         if (house == null)
             throw new NotFoundException();
 
-        Document doc = new Document("renterId", userId);
+        Document doc = new Document("renterId", renter.getId());
         doc.append("free", false);
         RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId).append("houseId", houseId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 

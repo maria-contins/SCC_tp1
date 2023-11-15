@@ -7,6 +7,7 @@ import scc.data.MongoDBLayer;
 import scc.entities.House.House;
 import scc.entities.Question.Question;
 import scc.entities.Rental.Rental;
+import scc.entities.User.Renter;
 import scc.exceptions.*;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
@@ -116,9 +117,9 @@ public class HouseResource {
     @Path("/{id}/rentals/availability") // availability post
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Rental createRental(@PathParam("id") String id, String userId, Rental rental) {
+    public Rental createRental(@PathParam("id") String id, Rental rental) {
         try {
-            return dataLayer.createAvailable(id, userId, rental);
+            return dataLayer.createAvailable(id, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
@@ -131,9 +132,9 @@ public class HouseResource {
     @Path("/{id}/rentals/{rentalId}") // any rental
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Rental updateRental(@PathParam("id") String id, @PathParam("rentalId") String rentalId, String userId, Rental rental) {
+    public Rental updateRental(@PathParam("id") String id, @PathParam("rentalId") String rentalId, Rental rental) {
         try {
-            return dataLayer.updateRental(id, rentalId, userId, rental);
+            return dataLayer.updateRental(id, rentalId, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
@@ -147,9 +148,9 @@ public class HouseResource {
     @Path("/{id}/rentals/{rentalId}/renter") // any rental
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Rental createRenter(@PathParam("id") String id, @PathParam("rentalId") String rentalId, String userId) {
+    public Rental createRenter(@PathParam("id") String id, @PathParam("rentalId") String rentalId, Renter renter) {
         try {
-            return dataLayer.createRent(id, rentalId, userId);
+            return dataLayer.createRent(id, rentalId, renter);
         } catch (Exception e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
@@ -160,6 +161,7 @@ public class HouseResource {
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @QueryParam("location")
     public List<House> getLocationHouses(@PathParam("id") String id, String location) {
         try {
             return dataLayer.getLocationHouses(id, location);
