@@ -66,11 +66,11 @@ public class UserResource {
 
     @DELETE
     @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public void deleteUser(@PathParam("id") String id, Cookie cookie) {
+    public void deleteUser(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id) {
 
-        // try check auth else throw unauthorized
         try {
+            if (!dataLayer.matchUserToCookie(cookie, id)) throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+
             dataLayer.deleteUser(id, cookie);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -126,7 +126,6 @@ public class UserResource {
         }
     }
 
-    /*List of houses of a given user;*/
     @GET
     @Path("/{id}/houses")
     @Produces(MediaType.APPLICATION_JSON)

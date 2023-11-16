@@ -56,15 +56,17 @@ public class HouseResource {
     @GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<House> getLocationHouses(@QueryParam("location") String location) {
+    public List<House> getLocationHouses(@QueryParam("location") String location, @QueryParam("discount") String discount) {
         if (location != null) {
             try {
                 return dataLayer.getLocationHouses(location);
             } catch (Exception e) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
-        } else
+        } if (discount.equals("true")) {
             return dataLayer.getDiscountHouses();
+        } else
+            return dataLayer.getAllHouses();
 
     }
 
@@ -151,9 +153,9 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Rental createRental(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, Rental rental) {
         try {
-            if (dataLayer.matchUserToCookie(cookie, rental.getOwnerId())) {
+            if (!dataLayer.matchUserToCookie(cookie, rental.getOwnerId()))
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
-            }
+
             return dataLayer.createAvailable(id, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -169,9 +171,9 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Rental updateRental(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, @PathParam("rentalId") String rentalId, Rental rental) {
         try {
-            if (dataLayer.matchUserToCookie(cookie, rental.getOwnerId())) {
+            if (!dataLayer.matchUserToCookie(cookie, rental.getOwnerId()))
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
-            }
+
             return dataLayer.updateRental(id, rentalId, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -186,9 +188,9 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Rental createRenter(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, @PathParam("rentalId") String rentalId, Renter renter) {
         try {
-            if (dataLayer.matchUserToCookie(cookie, renter.getId())) {
+            if (!dataLayer.matchUserToCookie(cookie, renter.getId()))
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
-            }
+
             return dataLayer.createRent(id, rentalId, renter);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);

@@ -12,7 +12,7 @@ public class CacheLayer {
         private static final boolean CACHE_ON = System.getenv("CACHE_ON").equals("1");
 
         public enum CacheType {
-            HOUSE, COOKIE, HOUSES_DISCOUNTED, HOUSES_LOCATION, HOUSE_USER, USER, QUESTION_LIST, RENTALS
+            HOUSE, COOKIE, HOUSES_DISCOUNTED, HOUSES_LOCATION, HOUSE_USER, USER, QUESTION_LIST, RENTALS, HOUSES
         }
 
     public static final String HOUSE_CACHE = "house:";
@@ -23,6 +23,7 @@ public class CacheLayer {
     public static final String HOUSE_DISCOUNTED_LIST_CACHE = "houseDiscountedList:";
     public static final String HOUSE_LOCATION_LIST_CACHE = "houseLocationList:";
     public static final String HOUSE_USER_LIST_CACHE = "houseUserList:";
+    public static final String HOUSES_CACHE = "housesList:";
 
         private static JedisPool instance;
 
@@ -62,6 +63,7 @@ public class CacheLayer {
             case HOUSES_LOCATION -> HOUSE_LOCATION_LIST_CACHE;
             case HOUSE_USER -> HOUSE_USER_LIST_CACHE;
             case RENTALS -> RENTALS_CACHE;
+            case HOUSES -> HOUSES_CACHE;
             default -> "";
         };
     }

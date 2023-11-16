@@ -42,7 +42,7 @@ public class TimerFunction {
 					MongoClient mongoClient = MongoClients.create(clientSettings);
 					MongoDatabase database = mongoClient.getDatabase(DB_NAME);
 
-        MongoCollection<DeleteTaskDAO> tasks = database.getCollection("deletetask", DeleteTaskDAO.class);
+        MongoCollection<DeleteTaskDAO> tasks = database.getCollection("tombstone", DeleteTaskDAO.class);
 
 
         MongoCollection<UserDAO> users = database.getCollection("users", UserDAO.class);

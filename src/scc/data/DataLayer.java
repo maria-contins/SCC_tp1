@@ -74,7 +74,7 @@ public class DataLayer {
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
         questions = database.getCollection("questions", QuestionDAO.class);
-        tombstone = database.getCollection("deletetask", DeleteTaskDAO.class);
+        tombstone = database.getCollection("tombstone", DeleteTaskDAO.class);
         cache = new CacheLayer();
     }
 
@@ -192,9 +192,10 @@ public class DataLayer {
     }
 
     public void deleteUser(String id, Cookie cookie) throws NotFoundException {
-        Document doc = new Document("deleted", true);
 
         if (!userExists(id)) throw new NotFoundException();
+
+        users.updateOne(new Document("id", id), new Document("$set", new Document("deleted", true)));
 
         cache.removeCache(CacheLayer.CacheType.USER, id);
         cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
@@ -336,8 +337,9 @@ public class DataLayer {
         if (result == null) throw new NotFoundException();
 
         cache.removeCache(CacheLayer.CacheType.HOUSE, id);
-
-        // TODO void all
+        cache.removeCache(CacheLayer.CacheType.HOUSES_LOCATION, result.getLocation());
+        cache.removeCache(CacheLayer.CacheType.HOUSE_USER, result.getOwnerId());
+        cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
         return HouseDAO.toHouse(result);
     }
@@ -356,11 +358,28 @@ public class DataLayer {
 
         cache.removeCache(CacheLayer.CacheType.HOUSE, houseId);
 
-        // TODO void all
+        cache.removeCache(CacheLayer.CacheType.HOUSE, houseId);
+        cache.removeCache(CacheLayer.CacheType.HOUSES_LOCATION, houseToDelete.getLocation());
+        cache.removeCache(CacheLayer.CacheType.HOUSE_USER, houseToDelete.getOwnerId());
+        cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
         tombstone.insertOne(new DeleteTaskDAO(DELETE_HOUSE_TASK, houseId));
 
         return houseToDelete.toHouse();
+    }
+
+    public List<House> getAllHouses() {
+        House[] cached = cache.readCache(CacheLayer.CacheType.HOUSES, "houses", House[].class);
+        if (cached != null) return Arrays.asList(cached);
+
+        List<House> result = new ArrayList<>();
+        for (HouseDAO house : houses.find(new Document("deleted", false))) {
+            result.add(HouseDAO.toHouse(house));
+        }
+
+        cache.addCache(CacheLayer.CacheType.HOUSES, "houses", result.toArray());
+
+        return result;
     }
 
     // RENTALS
@@ -370,11 +389,15 @@ public class DataLayer {
         if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
         if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
 
+
+        // TODO not verifying same ids
         rental.setFree(true);
 
         rentals.insertOne(Rental.toDAO(rental));
 
-        // TODO void rentals from houseId, if discounted void discounted
+        cache.removeCache(CacheLayer.CacheType.RENTALS, houseId);
+        if (!rental.getDiscount().isEmpty())
+            cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
         return rental;
     }
@@ -404,7 +427,8 @@ public class DataLayer {
 
         cache.removeCache(CacheLayer.CacheType.RENTALS, houseId);
 
-        // todo id discounted => void cache
+        if (!rental.getDiscount().isEmpty())
+            cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
         if (result == null) throw new NotFoundException();
 
@@ -435,14 +459,17 @@ public class DataLayer {
         // update/add to cache
         if (result == null) throw new NotFoundException();
 
-        // todo void houseRentals id discounted void discounted
+        cache.removeCache(CacheLayer.CacheType.RENTALS, houseId);
+        if (!result.getDiscount().isEmpty())
+            cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
         return RentalDAO.toRental(result);
     }
 
     public List<House> getLocationHouses(String location) throws NotFoundException {
+        House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_LOCATION, location, House[].class);
+        if (housesCached != null) return Arrays.asList(housesCached);
 
-        // todo check cash
         List<House> result = new ArrayList<>();
         for (HouseDAO house : houses.find(new Document("location", location).append("deleted", false))) {
             result.add(HouseDAO.toHouse(house));
@@ -454,8 +481,9 @@ public class DataLayer {
     }
 
     public List<House> getDiscountHouses() {
+        House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
+        if (housesCached != null) return Arrays.asList(housesCached);
 
-        // TODO check cache
         HashMap<String, House> result = new HashMap<>();
         for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")).append("free", true))) { // TODO TEST
             String id = rental.getHouseId();
@@ -469,7 +497,8 @@ public class DataLayer {
 
     public List<House> getUserHouses(String id) throws NotFoundException {
 
-        cache.readCache(CacheLayer.CacheType.HOUSE_USER, id, House[].class);
+        House[] cached = cache.readCache(CacheLayer.CacheType.HOUSE_USER, id, House[].class);
+        if (cached != null) return Arrays.asList(cached);
 
         UserDAO userDAO = users.find(new Document("id", id)).first();
 
