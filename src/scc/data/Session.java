@@ -4,6 +4,10 @@ public class Session {
     private String userId;
     private String sessionId;
 
+
+    public Session() {
+    }
+
     public Session(String userId, String sessionId) {
         this.userId = userId;
         this.sessionId = sessionId;

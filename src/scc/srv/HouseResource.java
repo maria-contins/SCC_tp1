@@ -28,8 +28,11 @@ public class HouseResource {
     @Path("/")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public House createHouse(House house) {
+    public House createHouse(@CookieParam("scc:session") Cookie cookie, House house) {
         try {
+            if (!dataLayer.matchUserToCookie(cookie, house.getOwnerId())) {
+                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            }
             return dataLayer.createHouse(house);
         } catch (DuplicateException e) {
             throw new WebApplicationException(Response.Status.CONFLICT);

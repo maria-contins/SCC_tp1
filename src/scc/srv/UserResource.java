@@ -3,6 +3,7 @@ package scc.srv;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.NewCookie;
+import scc.data.CacheLayer;
 import scc.data.DataLayer;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -10,6 +11,7 @@ import scc.entities.User.Auth;
 import scc.entities.User.User;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.NotFoundException;
+import scc.data.Session;
 
 import java.util.List;
 import java.util.UUID;
@@ -62,11 +64,11 @@ public class UserResource {
     @DELETE
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public User deleteUser(@PathParam("id") String id, Cookie cookie) {
+    public void deleteUser(@PathParam("id") String id, Cookie cookie) {
 
         // try check auth else throw unauthorized
         try {
-            return dataLayer.deleteUser(id, cookie);
+            dataLayer.deleteUser(id, cookie);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
@@ -102,18 +104,22 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response authUser(Auth auth) {
         try {
-            if (!dataLayer.verifyUser(auth)) {
+            if (dataLayer.verifyUser(auth)) {
                 String token = UUID.randomUUID().toString();
                 NewCookie cookie = new NewCookie("scc:session", token, "/", null, "sessionid", 3600, false, true);
 
-                dataLayer.bindCookie(cookie, auth.getId());
+               dataLayer.bindCookie(cookie, auth.getId());
+               // boolean received = s != null;
+
 
                 return Response.ok().cookie(cookie).build();
             } else {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
-        } catch (Exception e) {
+        } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.FORBIDDEN);
         }
     }
 

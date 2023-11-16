@@ -3,7 +3,7 @@ APP_NAME="scc-backend-57503" # found in the POM
 
 #BLOB STORAGE
 DEPLOY_BLOB="Y" # Y or N
-STORAGE_ACCOUNT_NAME="storageaccscc"
+STORAGE_ACCOUNT_NAME="storageaccscc57503"
 CONTAINER_NAME="media"
 STORAGE_ACCOUNT_CONNECTION_STRING_VAR_NAME="storageAccountConnectionString"
 
@@ -13,7 +13,7 @@ DEPLOY_DB="Y" # Y or N
 COSMOS_DB_ACCOUNT_NAME="scc-backend-db-57503"
 DATABASE_TYPE="MONGODB" #SQL or MONGODB
 DATABASE_NAME="RentalApp"
-CO_NAME="users;houses;rentals;questions"  #Container name for "SQL" or collection name for Mongo
+CO_NAME="users;houses;rentals;questions;deletetask"  #Container name for "SQL" or collection name for Mongo
 
 #for "SQL" only
 DB_KEY_VAR_NAME="DB_KEY"

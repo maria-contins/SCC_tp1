@@ -21,6 +21,7 @@ import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 
+import scc.entities.Deleted.DeleteTaskDAO;
 import scc.entities.House.House;
 import scc.entities.House.HouseDAO;
 import scc.entities.Question.Question;
@@ -38,6 +39,9 @@ import java.util.*;
 
 public class DataLayer {
 
+    private static final String DELETE_USER_TASK = "deleteUser";
+
+    private static final String DELETE_HOUSE_TASK = "deleteHouse";
     ConnectionString connectionString = new ConnectionString(System.getenv("mongoConnectionString"));
     //ConnectionString connectionString = new ConnectionString("mongodb://scc-backend-db-57503:kt1hrzGzkMgclgXFaL5tDmTmhGZK61ERGvUwHix4SebXjWUG9JsndhTsA14RmZWa85Q6gctlBJ4BACDbYK5yIg==@scc-backend-db-57503.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@scc-backend-db-57503@");
     CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
@@ -56,6 +60,8 @@ public class DataLayer {
 
     MongoCollection<RentalDAO> rentals;
 
+    MongoCollection<DeleteTaskDAO> tombstone;
+
     String BlobStoreconnectionString = System.getenv("storageAccountConnectionString");
 
     BlobContainerClient containerClient = new BlobContainerClientBuilder().connectionString(BlobStoreconnectionString).containerName("media").buildClient();
@@ -68,6 +74,7 @@ public class DataLayer {
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
         questions = database.getCollection("questions", QuestionDAO.class);
+        tombstone = database.getCollection("deletetask", DeleteTaskDAO.class);
         cache = new CacheLayer();
     }
 
@@ -77,6 +84,9 @@ public class DataLayer {
         // add to cache
         this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(userId, cookie.getValue()));
     }
+
+
+
 
     private Session sessionFromCookie(Cookie cookie) {
         if (cookie == null) {
@@ -90,6 +100,8 @@ public class DataLayer {
     public boolean hasAuth(Cookie cookie) {
         return this.sessionFromCookie(cookie) != null;
     }
+
+
 
     public boolean matchUserToCookie(Cookie cookie, String userId) {
         Session session = this.sessionFromCookie(cookie);
@@ -108,22 +120,31 @@ public class DataLayer {
     }
 
     private boolean houseExists(String houseId) {
-        return houses.find(eq("id", houseId)).first() == null;
+        if (cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class) != null)
+            return true;
+
+        return houses.find(new Document("id", houseId)).first() != null;
     }
 
     private boolean userExists(String userId) {
-        return users.find(eq("id", userId)).first() == null;
+        if (cache.readCache(CacheLayer.CacheType.USER, userId, User.class) != null)
+            return true;
+
+        return users.find(new Document("id", userId)).first() != null;
     }
 
-    public boolean verifyUser(Auth auth) throws NotFoundException {
+    public boolean verifyUser(Auth auth) throws NotFoundException, ForbiddenException {
         String password = auth.getPassword();
         String nickname = auth.getNickname();
 
-        UserDAO userDAO = users.find(eq("nickname", nickname)).first();
+        UserDAO userDAO = users.find(new Document("nickname", nickname)).first();
         if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
             throw new NotFoundException();
 
-        return password.equals(Hash.of(userDAO.getPassword()));
+        if (userDAO.getPassword() == null || userDAO.getPassword().isEmpty())
+            throw new ForbiddenException();
+
+        return userDAO.getPassword().equals(Hash.of(password));
     }
 
     // FOR DEBUG
@@ -168,17 +189,17 @@ public class DataLayer {
         return user;
     }
 
-    public User deleteUser(String id, Cookie cookie) throws NotFoundException {
+    public void deleteUser(String id, Cookie cookie) throws NotFoundException {
         Document doc = new Document("deleted", true);
-        UserDAO userToDelete = users.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
-        if (userToDelete == null) throw new NotFoundException();
+
+        if (!userExists(id)) throw new NotFoundException();
         else {
             cache.removeCache(CacheLayer.CacheType.USER, id);
             cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
 
-            //TODO scheduleDeleteTask
+            tombstone.insertOne(new DeleteTaskDAO(DELETE_USER_TASK, id));
 
-            return userToDelete.toUser();
+            //TODO scheduleDeleteTask
         }
     }
 
@@ -249,7 +270,7 @@ public class DataLayer {
     }
 
     public List<Question> listQuestions(String houseId) throws NotFoundException {
-        if (this.houseExists(houseId)) throw new NotFoundException();
+        if (!this.houseExists(houseId)) throw new NotFoundException();
 
         List<Question> qs = new ArrayList<>();
         for (QuestionDAO q : questions.find(eq("houseId", houseId)))
@@ -329,6 +350,8 @@ public class DataLayer {
         if (houseToDelete == null) throw new NotFoundException();
         else {
             cache.removeCache(CacheLayer.CacheType.HOUSE, id);
+
+            tombstone.insertOne(new DeleteTaskDAO(DELETE_HOUSE_TASK, id));
 
             //TODO scheduleDeleteTask
 

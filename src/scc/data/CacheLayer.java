@@ -5,7 +5,9 @@ import redis.clients.jedis.JedisPoolConfig;
 
 public class CacheLayer {
         private static final String RedisHostname = System.getenv("REDIS_URL");
+
         private static final String RedisKey = System.getenv("REDIS_KEY");
+
 
         private static final boolean CACHE_ON = System.getenv("CACHE_ON").equals("1");
 
@@ -69,6 +71,7 @@ public class CacheLayer {
             try (Jedis jedis = getCachePool().getResource()) {
                 jedis.set(getCacheKeyPrefix(ct) + key, mapper.writeValueAsString(value));
 
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -89,6 +92,20 @@ public class CacheLayer {
                 return null;
             }
         }
+
+
+        /**public  String readCache(CacheType ct, String key) {
+
+            try (Jedis jedis = getCachePool().getResource()) {
+                String value = jedis.get(getCacheKeyPrefix(ct) + key);
+                if (value == null) {
+                    return "null";
+                }
+                return value;
+            } catch (Exception e) {
+                return e.getMessage();
+            }
+        }*/
 
     public void removeCache(CacheType ct, String key) {
         if (!CACHE_ON) {
