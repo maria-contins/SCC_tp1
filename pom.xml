@@ -9,7 +9,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>  
     <authors>57503</authors>
   </properties>  
-  <dependencies> 
+  <dependencies>
+
 	<dependency>
 		<groupId>com.azure</groupId>
 		<artifactId>azure-storage-blob</artifactId>
