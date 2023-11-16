@@ -1,6 +1,7 @@
 package scc.srv;
 
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import scc.data.DataLayer;
@@ -68,8 +69,11 @@ public class HouseResource {
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public House updateHouse(@PathParam("id") String id, House house) {
+    public House updateHouse(@CookieParam("scc:session") Cookie cookie, @PathParam("id") String id, House house) {
         try {
+            if (dataLayer.matchUserToCookie(cookie, house.getOwnerId())) {
+                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            }
             return dataLayer.updateHouse(id, house);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -81,6 +85,7 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public House deleteHouse(@PathParam("id") String id) {
         try {
+            // TODO how verify if user is owner
             return dataLayer.deleteHouse(id);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -93,8 +98,11 @@ public class HouseResource {
     @Path("/{id}/questions")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Question createQuestion(@PathParam("id") String id, Question question) {
+    public Question createQuestion(@CookieParam("scc:session") Cookie cookie, @PathParam("id") String id, Question question) {
         try {
+            if (dataLayer.matchUserToCookie(cookie, question.getAuthorId())) {
+                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            }
             return dataLayer.createQuestion(id, question);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -135,6 +143,7 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Rental createRental(@PathParam("id") String id, Rental rental) {
         try {
+
             return dataLayer.createAvailable(id, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);

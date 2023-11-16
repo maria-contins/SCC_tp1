@@ -211,6 +211,7 @@ redis_deploy(){
     az redis create --location westeurope --name $REDIS_NAME --resource-group $RESOURCE_GROUP --sku Basic --vm-size c0 --redis-version 6
     az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "$REDIS_HOSTNAME_VAR_NAME=$REDIS_NAME.redis.cache.windows.net"
     az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "$REDIS_KEY_VAR_NAME=$(az redis list-keys --name $REDIS_NAME --resource-group $RESOURCE_GROUP | python3 -c "import sys, json; print(json.load(sys.stdin)['primaryKey'])")"
+    az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "CACHE_ON=$CACHE_ON"
 }
 
 az_fun_deploy(){

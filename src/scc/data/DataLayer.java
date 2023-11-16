@@ -228,7 +228,10 @@ public class DataLayer {
         } else {
             // Here it needs verification. When replying, we can assume that the houseId of the user was verified upon creation
             HouseDAO houseDAO = houses.find(eq("id", question.getHouseId())).first();
+
             if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
+
+            if (!houseId.equals(houseDAO.getId())) throw new ForbiddenException();
 
             QuestionDAO checkQuestion = questions.find(eq("id", question.getId())).first();
             if (checkQuestion != null) throw new DuplicateException();
@@ -321,7 +324,7 @@ public class DataLayer {
     public House deleteHouse(String id) throws NotFoundException {
         Document doc = new Document("deleted", true);
         HouseDAO houseToDelete = houses.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
-        
+
         if (houseToDelete == null) throw new NotFoundException();
         else {
             cache.removeCache(CacheLayer.CacheType.HOUSE, id);
@@ -339,6 +342,8 @@ public class DataLayer {
         if (houseDAO == null) throw new NotFoundException();
         //if (!houseDAO.getOwnerId().equals(userId)) cookie
         //throw new ForbiddenException();
+
+        // use cookie to check if user is owner of house
 
         rental.setFree(true);
 

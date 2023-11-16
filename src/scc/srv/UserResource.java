@@ -6,7 +6,6 @@ import jakarta.ws.rs.core.NewCookie;
 import scc.data.DataLayer;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import scc.entities.User.Auth;
 import scc.entities.User.User;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.NotFoundException;
