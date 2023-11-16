@@ -15,6 +15,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import jakarta.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Cookie;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -60,12 +61,51 @@ public class MongoDBLayer {
 
     BlobContainerClient containerClient = new BlobContainerClientBuilder().connectionString(BlobStoreconnectionString).containerName("media").buildClient();
 
+
+    CacheLayer cache;
+
     public MongoDBLayer() {
         users = database.getCollection("users", UserDAO.class);
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
         questions = database.getCollection("questions", QuestionDAO.class);
+        cache = new CacheLayer();
     }
+
+
+    //Auth related
+    public void bindCookie(NewCookie cookie, String id) {
+        // add to cache
+        this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(id, cookie.getValue()));
+    }
+
+    private Session sessionFromCookie(Cookie cookie){
+        if(cookie == null){
+            return null;
+        }
+
+        // get from cache
+        return this.cache.readCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), Session.class);
+    }
+
+
+    public boolean hasAuth(Cookie cookie){
+        return this.sessionFromCookie(cookie) != null;
+    }
+
+    public boolean matchUserToCookie(Cookie cookie, String userId){
+        Session session = this.sessionFromCookie(cookie);
+        if(session == null){
+            return false;
+        }
+
+        return session.getUserId().equals(userId);
+    }
+
+
+
+
+
 
     // AUXILIARY METHODS
 
@@ -175,9 +215,7 @@ public class MongoDBLayer {
         return password.equals(Hash.of(userDAO.getPassword()));
     }
 
-    public void bindCookie(NewCookie cookie, String id) {
-        // add to cache
-    }
+
 
     // QUESTIONS
     public Question createQuestion(String houseId, Question question) throws NotFoundException, ForbiddenException, DuplicateException {
