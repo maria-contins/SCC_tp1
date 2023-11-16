@@ -3,6 +3,7 @@ package scc.data;
 import static com.mongodb.client.model.Filters.*;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
 
@@ -41,10 +42,7 @@ public class DataLayer {
     CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
     CodecRegistry codecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(), pojoCodecRegistry);
 
-    MongoClientSettings settings = MongoClientSettings.builder()
-            .applyConnectionString(connectionString)
-            .codecRegistry(codecRegistry)
-            .build();
+    MongoClientSettings settings = MongoClientSettings.builder().applyConnectionString(connectionString).codecRegistry(codecRegistry).build();
 
     MongoClient mongoClient = MongoClients.create(settings);
 
@@ -79,8 +77,8 @@ public class DataLayer {
         this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(userId, cookie.getValue()));
     }
 
-    private Session sessionFromCookie(Cookie cookie){
-        if(cookie == null) {
+    private Session sessionFromCookie(Cookie cookie) {
+        if (cookie == null) {
             return null;
         }
         // get from cache
@@ -88,13 +86,13 @@ public class DataLayer {
     }
 
 
-    public boolean hasAuth(Cookie cookie){
+    public boolean hasAuth(Cookie cookie) {
         return this.sessionFromCookie(cookie) != null;
     }
 
-    public boolean matchUserToCookie(Cookie cookie, String userId){
+    public boolean matchUserToCookie(Cookie cookie, String userId) {
         Session session = this.sessionFromCookie(cookie);
-        if(session == null){
+        if (session == null) {
             return false;
         }
 
@@ -153,29 +151,26 @@ public class DataLayer {
 
     public User createUser(User user) throws DuplicateException, NotFoundException {
 
-            if (!this.pictureExists(user.getPhotoId()))
-                throw new NotFoundException();
+        if (!this.pictureExists(user.getPhotoId())) throw new NotFoundException();
 
-            if (userExists(user.getId()))
-                throw new DuplicateException();
+        if (userExists(user.getId())) throw new DuplicateException();
 
-            user.setDeleted(false);
+        user.setDeleted(false);
 
-            String password = user.getPassword();
-            user.setPassword(Hash.of(password));
+        String password = user.getPassword();
+        user.setPassword(Hash.of(password));
 
-            users.insertOne(User.toDAO(user));
+        users.insertOne(User.toDAO(user));
 
-            cache.addCache(CacheLayer.CacheType.USER, user.getId(), user);
+        cache.addCache(CacheLayer.CacheType.USER, user.getId(), user);
 
-            return user;
+        return user;
     }
 
     public User deleteUser(String id, Cookie cookie) throws NotFoundException {
         Document doc = new Document("deleted", true);
         UserDAO userToDelete = users.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
-        if (userToDelete == null)
-            throw new NotFoundException();
+        if (userToDelete == null) throw new NotFoundException();
         else {
             cache.removeCache(CacheLayer.CacheType.USER, id);
             cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
@@ -193,8 +188,7 @@ public class DataLayer {
         if (user.getPassword() != null && !user.getPassword().isEmpty())
             userUpdate.append("password", Hash.of(user.getPassword()));
         if (user.getPhotoId() != null && !user.getPhotoId().isEmpty()) {
-            if (this.pictureExists(user.getPhotoId()))
-                throw new NotFoundException();
+            if (this.pictureExists(user.getPhotoId())) throw new NotFoundException();
             userUpdate.append("photoId", user.getPhotoId());
         }
 
@@ -204,8 +198,7 @@ public class DataLayer {
 
         cache.addCache(CacheLayer.CacheType.USER, id, user);
 
-        if (result == null)
-            throw new NotFoundException();
+        if (result == null) throw new NotFoundException();
 
         return UserDAO.toUser(result);
     }
@@ -216,21 +209,16 @@ public class DataLayer {
 
         if (question.getRepliedToId() != null && !question.getRepliedToId().isEmpty()) {
             QuestionDAO repliedTo = questions.find(eq("id", question.getRepliedToId())).first();
-            if (repliedTo == null)
-                throw new NotFoundException();
+            if (repliedTo == null) throw new NotFoundException();
 
-            if (!repliedTo.getRepliedToId().isEmpty())
-                throw new ForbiddenException();
+            if (!repliedTo.getRepliedToId().isEmpty()) throw new ForbiddenException();
 
-            if (repliedTo.getId().equals(question.getId()))
-                throw new DuplicateException();
+            if (repliedTo.getId().equals(question.getId())) throw new DuplicateException();
 
-            if (repliedTo.isAnswered())
-                throw new ForbiddenException();
+            if (repliedTo.isAnswered()) throw new ForbiddenException();
 
             UserDAO replier = users.find(eq("id", question.getAuthorId())).first();
-            if (replier == null || replier.isDeleted())
-                throw new NotFoundException();
+            if (replier == null || replier.isDeleted()) throw new NotFoundException();
 
             questions.updateOne(new Document("id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
 
@@ -240,16 +228,13 @@ public class DataLayer {
         } else {
             // Here it needs verification. When replying, we can assume that the houseId of the user was verified upon creation
             HouseDAO houseDAO = houses.find(eq("id", question.getHouseId())).first();
-            if (houseDAO == null || houseDAO.isDeleted())
-                throw new NotFoundException();
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
             QuestionDAO checkQuestion = questions.find(eq("id", question.getId())).first();
-            if (checkQuestion != null)
-                throw new DuplicateException();
+            if (checkQuestion != null) throw new DuplicateException();
 
             UserDAO userDAO = users.find(eq("id", question.getAuthorId())).first();
-            if (userDAO == null || userDAO.isDeleted())
-                throw new NotFoundException();
+            if (userDAO == null || userDAO.isDeleted()) throw new NotFoundException();
 
             questions.insertOne(Question.toDAO(question));
 
@@ -260,13 +245,11 @@ public class DataLayer {
     }
 
     public List<Question> listQuestions(String houseId) throws NotFoundException {
-        if(this.houseExists(houseId))
-            throw new NotFoundException();
+        if (this.houseExists(houseId)) throw new NotFoundException();
 
         List<Question> qs = new ArrayList<>();
-        for (QuestionDAO q : questions.find(eq("houseId", houseId))) {
+        for (QuestionDAO q : questions.find(eq("houseId", houseId)))
             qs.add(q.toQuestion());
-        }
 
         return qs;
     }
@@ -275,63 +258,60 @@ public class DataLayer {
 
     public House createHouse(House house) throws DuplicateException, NotFoundException {
 
-            HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
-            if (checkHouse != null && !checkHouse.isDeleted())
-                throw new DuplicateException();
+        HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
+        if (checkHouse != null && !checkHouse.isDeleted()) throw new DuplicateException();
 
-            house.setDeleted(false);
+        house.setDeleted(false);
 
-            for (String i : house.getMedia())
-                if (!this.pictureExists(i))
-                    throw new NotFoundException();
+        for (String i : house.getMedia())
+            if (!this.pictureExists(i)) throw new NotFoundException();
 
-            UserDAO userDAO = users.find(eq("id", house.getOwnerId())).first();
-            if (userDAO == null || userDAO.isDeleted())
-                throw new NotFoundException();
+        UserDAO userDAO = users.find(eq("id", house.getOwnerId())).first();
+        if (userDAO == null || userDAO.isDeleted()) throw new NotFoundException();
 
         houses.insertOne(House.toDAO(house));
 
-            //add to cache
+        cache.addCache(CacheLayer.CacheType.HOUSE, house.getId(), house);
 
-            return house;
+        return house;
     }
 
     public House getHouse(String id) throws NotFoundException {
 
-        // look for user in cache
-        //if not found:
-        HouseDAO houseDAO = houses.find(eq("id", id)).first();
+        HouseDAO houseDAO;
+        House house = cache.readCache(CacheLayer.CacheType.HOUSE, id, House.class);
 
-        if (houseDAO == null || houseDAO.isDeleted())
-            throw new NotFoundException();
+        if (house == null) {
 
-        //add to cache
+            houseDAO = houses.find(eq("id", id)).first();
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
-        return (houseDAO.toHouse());
-        // add + adequate exceptions
+            house = houseDAO.toHouse();
+
+            cache.addCache(CacheLayer.CacheType.HOUSE, id, house);
+        }
+
+        return (house);
     }
 
     public House updateHouse(String id, House house) throws NotFoundException {
 
         Document houseUpdate = new Document();
-        if (house.getName() != null && !house.getName().isEmpty())
-            houseUpdate.append("name", house.getName());
+        if (house.getName() != null && !house.getName().isEmpty()) houseUpdate.append("name", house.getName());
         if (house.getLocation() != null && !house.getLocation().isEmpty())
             houseUpdate.append("location", house.getLocation());
         if (house.getDescription() != null && !house.getDescription().isEmpty())
             houseUpdate.append("description", house.getDescription());
-        if (house.getMedia() != null && !house.getMedia().isEmpty())
-            houseUpdate.append("media", house.getMedia());
+        if (house.getMedia() != null && !house.getMedia().isEmpty()) houseUpdate.append("media", house.getMedia());
 
         Document doc = new Document("$set", houseUpdate);
         houses.updateOne(new Document("id", id), doc);
 
         HouseDAO result = houses.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-        // update/add to cache
+        cache.addCache(CacheLayer.CacheType.HOUSE, id, house);
 
-        if (result == null)
-            throw new NotFoundException();
+        if (result == null) throw new NotFoundException();
 
         return HouseDAO.toHouse(result);
 
@@ -341,11 +321,13 @@ public class DataLayer {
     public House deleteHouse(String id) throws NotFoundException {
         Document doc = new Document("deleted", true);
         HouseDAO houseToDelete = houses.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
-        if (houseToDelete == null)
-            throw new NotFoundException();
+        
+        if (houseToDelete == null) throw new NotFoundException();
         else {
-            //remove from cache
-            //scheduleDeleteTask
+            cache.removeCache(CacheLayer.CacheType.HOUSE, id);
+
+            //TODO scheduleDeleteTask
+
             return houseToDelete.toHouse();
         }
     }
@@ -354,10 +336,9 @@ public class DataLayer {
 
     public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null)
-            throw new NotFoundException();
+        if (houseDAO == null) throw new NotFoundException();
         //if (!houseDAO.getOwnerId().equals(userId)) cookie
-            //throw new ForbiddenException();
+        //throw new ForbiddenException();
 
         rental.setFree(true);
 
@@ -368,46 +349,42 @@ public class DataLayer {
 
     public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null)
-            throw new NotFoundException();
+        if (houseDAO == null) throw new NotFoundException();
 
         //UserDAO userDAO = users.find(new Document("id", userId)).first(); TODO COOKIE
         //if (userDAO == null)
-            //throw new NotFoundException();
+        //throw new NotFoundException();
 
         //add cookie user id verification
 
         Document rentalUpdate = new Document();
 
-            if (rental.getHouseId() != null && !rental.getHouseId().isEmpty())
-                rentalUpdate.append("houseId", rental.getHouseId());
-            if (rental.getRenterId() != null && !rental.getRenterId().isEmpty())
-                rentalUpdate.append("renterId", rental.getRenterId());
-            if (rental.getPrice() != null && !rental.getPrice().isEmpty())
-                rentalUpdate.append("price", rental.getPrice());
-            if (rental.getFromDate() != null && !rental.getFromDate().isEmpty())
-                rentalUpdate.append("fromDate", rental.getFromDate());
-            if (rental.getToDate() != null && !rental.getToDate().isEmpty())
-                rentalUpdate.append("toDate", rental.getToDate());
-            if (rental.getDiscount() != null && !rental.getDiscount().isEmpty())
-                rentalUpdate.append("discount", rental.getDiscount());
-            if (rental.getOwnerId() != null && !rental.getOwnerId().isEmpty())
-                rentalUpdate.append("ownerId", rental.getOwnerId());
+        if (rental.getHouseId() != null && !rental.getHouseId().isEmpty())
+            rentalUpdate.append("houseId", rental.getHouseId());
+        if (rental.getRenterId() != null && !rental.getRenterId().isEmpty())
+            rentalUpdate.append("renterId", rental.getRenterId());
+        if (rental.getPrice() != null && !rental.getPrice().isEmpty()) rentalUpdate.append("price", rental.getPrice());
+        if (rental.getFromDate() != null && !rental.getFromDate().isEmpty())
+            rentalUpdate.append("fromDate", rental.getFromDate());
+        if (rental.getToDate() != null && !rental.getToDate().isEmpty())
+            rentalUpdate.append("toDate", rental.getToDate());
+        if (rental.getDiscount() != null && !rental.getDiscount().isEmpty())
+            rentalUpdate.append("discount", rental.getDiscount());
+        if (rental.getOwnerId() != null && !rental.getOwnerId().isEmpty())
+            rentalUpdate.append("ownerId", rental.getOwnerId());
 
-            Document doc = new Document("$set", rentalUpdate);
-            RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+        Document doc = new Document("$set", rentalUpdate);
+        RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-            // update/add to cache
-            if (result == null)
-                throw new NotFoundException();
+        // update/add to cache
+        if (result == null) throw new NotFoundException();
 
-            return RentalDAO.toRental(result);
+        return RentalDAO.toRental(result);
     }
 
     public List<Rental> listRentals(String houseId) throws NotFoundException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null)
-            throw new NotFoundException();
+        if (houseDAO == null) throw new NotFoundException();
 
         List<Rental> rentalsList = new ArrayList<>();
         for (RentalDAO rental : rentals.find(eq("houseId", houseId))) {
@@ -427,8 +404,7 @@ public class DataLayer {
         RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId).append("houseId", houseId), new Document("$set", doc), new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
         // update/add to cache
-        if (result == null)
-            throw new NotFoundException();
+        if (result == null) throw new NotFoundException();
 
         return RentalDAO.toRental(result);
     }
@@ -456,8 +432,7 @@ public class DataLayer {
     public List<String> getUserHouses(String id) throws NotFoundException {
         UserDAO userDAO = users.find(new Document("id", id)).first();
 
-        if (userDAO == null)
-            throw new NotFoundException();
+        if (userDAO == null) throw new NotFoundException();
 
         List<String> result = new ArrayList<>();
         for (HouseDAO house : houses.find(eq("ownerId", id))) {
