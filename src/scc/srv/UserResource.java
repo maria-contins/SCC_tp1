@@ -2,7 +2,7 @@ package scc.srv;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.NewCookie;
-import scc.data.MongoDBLayer;
+import scc.data.DataLayer;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import scc.entities.User.Auth;
@@ -18,14 +18,14 @@ import java.util.UUID;
 public class UserResource {
 
     //CosmosDBLayer dataLayer;
-    MongoDBLayer dataLayer;
+    DataLayer dataLayer;
 
     //private static final boolean DEBUG = System.getenv("DEBUG").equals("1"); //retirando esta linha e a de cima funciona
 
     public UserResource() {
     }
     
-    public UserResource(MongoDBLayer dm) {
+    public UserResource(DataLayer dm) {
         this.dataLayer = dm;
     }
 

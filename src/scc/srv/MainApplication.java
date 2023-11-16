@@ -3,7 +3,7 @@ package scc.srv;
 import java.util.HashSet;
 import java.util.Set;
 
-import scc.data.MongoDBLayer;
+import scc.data.DataLayer;
 import scc.utils.GenericExceptionMapper;
 
 import jakarta.ws.rs.core.Application;
@@ -15,7 +15,7 @@ public class MainApplication extends Application
 
 	// TODO create collections on startup
 	public MainApplication() {
-		MongoDBLayer dm = new MongoDBLayer();
+		DataLayer dm = new DataLayer();
 		singletons.add(dm);
 		singletons.add(new HouseResource(dm));
 		singletons.add(new MediaResource());

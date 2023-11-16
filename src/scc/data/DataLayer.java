@@ -34,7 +34,7 @@ import scc.utils.Hash;
 
 import java.util.*;
 
-public class MongoDBLayer {
+public class DataLayer {
 
     ConnectionString connectionString = new ConnectionString(System.getenv("mongoConnectionString"));
     //ConnectionString connectionString = new ConnectionString("mongodb://scc-backend-db-57503:kt1hrzGzkMgclgXFaL5tDmTmhGZK61ERGvUwHix4SebXjWUG9JsndhTsA14RmZWa85Q6gctlBJ4BACDbYK5yIg==@scc-backend-db-57503.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@scc-backend-db-57503@");
@@ -64,7 +64,7 @@ public class MongoDBLayer {
 
     CacheLayer cache;
 
-    public MongoDBLayer() {
+    public DataLayer() {
         users = database.getCollection("users", UserDAO.class);
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
@@ -74,9 +74,9 @@ public class MongoDBLayer {
 
 
     //Auth related
-    public void bindCookie(NewCookie cookie, String id) {
+    public void bindCookie(NewCookie cookie, String userId) {
         // add to cache
-        this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(id, cookie.getValue()));
+        this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(userId, cookie.getValue()));
     }
 
     private Session sessionFromCookie(Cookie cookie){
@@ -101,10 +101,6 @@ public class MongoDBLayer {
 
         return session.getUserId().equals(userId);
     }
-
-
-
-
 
 
     // AUXILIARY METHODS

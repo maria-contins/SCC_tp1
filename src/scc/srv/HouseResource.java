@@ -3,7 +3,7 @@ package scc.srv;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import scc.data.MongoDBLayer;
+import scc.data.DataLayer;
 import scc.entities.House.House;
 import scc.entities.Question.Question;
 import scc.entities.Rental.Rental;
@@ -17,9 +17,9 @@ import java.util.List;
 @Path("/houses")
 public class HouseResource {
 	
-    private MongoDBLayer dataLayer;
+    private DataLayer dataLayer;
 
-    public HouseResource(MongoDBLayer dataLayer) {
+    public HouseResource(DataLayer dataLayer) {
         this.dataLayer = dataLayer;
     }
     
