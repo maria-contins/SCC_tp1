@@ -90,7 +90,7 @@ public class CacheLayer {
             }
         }
 
-    private void removeCache(CacheType ct, String key) {
+    public void removeCache(CacheType ct, String key) {
         if (!CACHE_ON) {
             return;
         }

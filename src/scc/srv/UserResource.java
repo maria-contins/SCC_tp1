@@ -1,6 +1,7 @@
 package scc.srv;
 
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.NewCookie;
 import scc.data.DataLayer;
 import jakarta.ws.rs.core.MediaType;
@@ -29,9 +30,9 @@ public class UserResource {
         this.dataLayer = dm;
     }
 
-    // TODO add exceptions (duplicateEntity etc)
 
-    @GET
+    // for debug purposes
+    /*@GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
     public List<User> getAllUsers() {
@@ -40,7 +41,7 @@ public class UserResource {
         } catch (Exception e) {
             throw new WebApplicationException(Response.ok(e.getMessage()).status(Response.Status.CONFLICT).build());
         }
-    }
+    }*/
 
     @POST
     @Path("/")
@@ -61,17 +62,18 @@ public class UserResource {
     @DELETE
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public User deleteUser(@PathParam("id") String id) {
+    public User deleteUser(@PathParam("id") String id, Cookie cookie) {
 
         // try check auth else throw unauthorized
         try {
-            return dataLayer.deleteUser(id);
+            return dataLayer.deleteUser(id, cookie);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
 
-    @GET
+    // for debug purposes
+    /*@GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public User getUser(@PathParam("id") String id) {
@@ -80,7 +82,7 @@ public class UserResource {
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-    }
+    }*/
 
     @PATCH
     @Path("/{id}")

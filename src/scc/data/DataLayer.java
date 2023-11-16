@@ -15,7 +15,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import jakarta.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.Cookie;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -80,10 +80,9 @@ public class DataLayer {
     }
 
     private Session sessionFromCookie(Cookie cookie){
-        if(cookie == null){
+        if(cookie == null) {
             return null;
         }
-
         // get from cache
         return this.cache.readCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), Session.class);
     }
@@ -105,23 +104,6 @@ public class DataLayer {
 
     // AUXILIARY METHODS
 
-    public List<User> getAllUsers() {
-        List<User> us = new ArrayList<>();
-        for (UserDAO u : users.find(new Document())) {
-            us.add(u.toUser());
-        }
-        return us;
-    }
-
-   // searches for house with houseId availability
-    public List<Rental> getHouseAvailability(String houseId) {
-        List<Rental> as = new ArrayList<>();
-        for (RentalDAO a : rentals.find(eq("houseId", houseId))) {
-            as.add(RentalDAO.toRental(a));
-        }
-        return as;
-    }
-
     private boolean pictureExists(String photoId) {
         return !photoId.isEmpty() && containerClient.getBlobClient(photoId).exists();
     }
@@ -130,41 +112,22 @@ public class DataLayer {
         return houses.find(eq("id", houseId)).first() == null;
     }
 
-    // USERS
-
-    public User createUser(User user) throws DuplicateException, NotFoundException {
-            //check if pic exists else 404
-
-            if (!this.pictureExists(user.getPhotoId()))
-                throw new NotFoundException();
-
-            UserDAO checkUser = users.find(eq("id", user.getId())).first();
-            if (checkUser != null)
-                throw new DuplicateException();
-
-            user.setDeleted(false);
-
-            String password = user.getPassword();
-            user.setPassword(Hash.of(password));
-
-            users.insertOne(User.toDAO(user));
-            //add to cache
-
-            return user;
+    private boolean userExists(String userId) {
+        return users.find(eq("id", userId)).first() == null;
     }
 
-    public User deleteUser(String id) throws NotFoundException {
-        Document doc = new Document("deleted", true);
-        UserDAO userToDelete = users.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
-        if (userToDelete == null)
+    public boolean verifyUser(Auth auth) throws NotFoundException {
+        String password = auth.getPassword();
+        String nickname = auth.getNickname();
+
+        UserDAO userDAO = users.find(eq("nickname", nickname)).first();
+        if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
             throw new NotFoundException();
-        else {
-            //remove from cache
-            //scheduleDeleteTask
-            return userToDelete.toUser();
-        }
+
+        return password.equals(Hash.of(userDAO.getPassword()));
     }
 
+    // FOR DEBUG
     public User getUser(String id) throws NotFoundException {
 
         // look for user in cache
@@ -176,6 +139,51 @@ public class DataLayer {
         //add user to cache
 
         return UserDAO.toUser(userDAO);
+    }
+
+    public List<User> getAllUsers() {
+        List<User> us = new ArrayList<>();
+        for (UserDAO u : users.find(new Document())) {
+            us.add(u.toUser());
+        }
+        return us;
+    }
+
+    // USERS
+
+    public User createUser(User user) throws DuplicateException, NotFoundException {
+
+            if (!this.pictureExists(user.getPhotoId()))
+                throw new NotFoundException();
+
+            if (userExists(user.getId()))
+                throw new DuplicateException();
+
+            user.setDeleted(false);
+
+            String password = user.getPassword();
+            user.setPassword(Hash.of(password));
+
+            users.insertOne(User.toDAO(user));
+
+            cache.addCache(CacheLayer.CacheType.USER, user.getId(), user);
+
+            return user;
+    }
+
+    public User deleteUser(String id, Cookie cookie) throws NotFoundException {
+        Document doc = new Document("deleted", true);
+        UserDAO userToDelete = users.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
+        if (userToDelete == null)
+            throw new NotFoundException();
+        else {
+            cache.removeCache(CacheLayer.CacheType.USER, id);
+            cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
+
+            //TODO scheduleDeleteTask
+
+            return userToDelete.toUser();
+        }
     }
 
     public User updateUser(String id, User user) throws NotFoundException {
@@ -193,24 +201,14 @@ public class DataLayer {
         Document doc = new Document("$set", userUpdate);
 
         UserDAO result = users.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
-        // update/add to cache
+
+        cache.addCache(CacheLayer.CacheType.USER, id, user);
+
         if (result == null)
             throw new NotFoundException();
 
         return UserDAO.toUser(result);
     }
-
-    public boolean verifyUser(Auth auth) throws NotFoundException {
-        String password = auth.getPassword();
-        String nickname = auth.getNickname();
-
-        UserDAO userDAO = users.find(eq("nickname", nickname)).first();
-        if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
-            throw new NotFoundException();
-
-        return password.equals(Hash.of(userDAO.getPassword()));
-    }
-
 
 
     // QUESTIONS
