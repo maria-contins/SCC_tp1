@@ -85,8 +85,10 @@ public class DataLayer {
         this.cache.addCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), new Session(userId, cookie.getValue()));
     }
 
-
-
+    public String getUserIdFromCookie(Cookie cookie) throws NotFoundException {
+        Session ss = cache.readCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), Session.class);
+        return ss == null ? null : ss.getUserId();
+    }
 
     private Session sessionFromCookie(Cookie cookie) {
         if (cookie == null) {
@@ -184,7 +186,7 @@ public class DataLayer {
 
         users.insertOne(User.toDAO(user));
 
-        cache.addCache(CacheLayer.CacheType.USER, user.getId(), user);
+        cache.addCache(CacheLayer.CacheType.USER, user.getId(), User.class);
 
         return user;
     }
@@ -193,14 +195,12 @@ public class DataLayer {
         Document doc = new Document("deleted", true);
 
         if (!userExists(id)) throw new NotFoundException();
-        else {
-            cache.removeCache(CacheLayer.CacheType.USER, id);
-            cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
 
-            tombstone.insertOne(new DeleteTaskDAO(DELETE_USER_TASK, id));
+        cache.removeCache(CacheLayer.CacheType.USER, id);
+        cache.removeCache(CacheLayer.CacheType.COOKIE, cookie.getValue());
 
-            //TODO scheduleDeleteTask
-        }
+        tombstone.insertOne(new DeleteTaskDAO(DELETE_USER_TASK, id));
+
     }
 
     public User updateUser(String id, User user) throws NotFoundException {
@@ -218,9 +218,9 @@ public class DataLayer {
 
         UserDAO result = users.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-        cache.addCache(CacheLayer.CacheType.USER, id, user);
-
         if (result == null) throw new NotFoundException();
+
+        cache.removeCache(CacheLayer.CacheType.USER, id);
 
         return UserDAO.toUser(result);
     }
@@ -230,6 +230,7 @@ public class DataLayer {
     public Question createQuestion(String houseId, Question question) throws NotFoundException, ForbiddenException, DuplicateException {
 
         if (question.getRepliedToId() != null && !question.getRepliedToId().isEmpty()) {
+
             QuestionDAO repliedTo = questions.find(eq("id", question.getRepliedToId())).first();
             if (repliedTo == null) throw new NotFoundException();
 
@@ -245,8 +246,6 @@ public class DataLayer {
             questions.updateOne(new Document("id", question.getRepliedToId()), new Document("$set", new Document("answered", true)));
 
             questions.insertOne(Question.toDAO(question));
-
-            //add to cache
         } else {
             // Here it needs verification. When replying, we can assume that the houseId of the user was verified upon creation
             HouseDAO houseDAO = houses.find(eq("id", question.getHouseId())).first();
@@ -262,21 +261,26 @@ public class DataLayer {
             if (userDAO == null || userDAO.isDeleted()) throw new NotFoundException();
 
             questions.insertOne(Question.toDAO(question));
-
-            //add to cache
         }
+
+        cache.removeCache(CacheLayer.CacheType.QUESTION_LIST, houseId);
 
         return question;
     }
 
     public List<Question> listQuestions(String houseId) throws NotFoundException {
         if (!this.houseExists(houseId)) throw new NotFoundException();
+        
+        Question[] listQuestionCache = cache.readCache(CacheLayer.CacheType.QUESTION_LIST, houseId, Question[].class);
+            if (listQuestionCache != null) return Arrays.asList(listQuestionCache);
 
-        List<Question> qs = new ArrayList<>();
+        List<Question> listQuestions = new ArrayList<>();
         for (QuestionDAO q : questions.find(eq("houseId", houseId)))
-            qs.add(q.toQuestion());
+            listQuestions.add(q.toQuestion());
 
-        return qs;
+        cache.addCache(CacheLayer.CacheType.QUESTION_LIST, houseId, listQuestions.toArray());
+
+        return listQuestions;
     }
 
     // HOUSES
@@ -291,9 +295,6 @@ public class DataLayer {
         for (String i : house.getMedia())
             if (!this.pictureExists(i)) throw new NotFoundException();
 
-        UserDAO userDAO = users.find(eq("id", house.getOwnerId())).first();
-        if (userDAO == null || userDAO.isDeleted()) throw new NotFoundException();
-
         houses.insertOne(House.toDAO(house));
 
         cache.addCache(CacheLayer.CacheType.HOUSE, house.getId(), house);
@@ -307,16 +308,14 @@ public class DataLayer {
         House house = cache.readCache(CacheLayer.CacheType.HOUSE, id, House.class);
 
         if (house == null) {
-
             houseDAO = houses.find(eq("id", id)).first();
             if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
-
             house = houseDAO.toHouse();
 
             cache.addCache(CacheLayer.CacheType.HOUSE, id, house);
         }
 
-        return (house);
+        return house;
     }
 
     public House updateHouse(String id, House house) throws NotFoundException {
@@ -332,59 +331,57 @@ public class DataLayer {
         Document doc = new Document("$set", houseUpdate);
         houses.updateOne(new Document("id", id), doc);
 
-        HouseDAO result = houses.findOneAndUpdate(new Document("id", id), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
-
-        cache.addCache(CacheLayer.CacheType.HOUSE, id, house);
+        HouseDAO result = houses.findOneAndUpdate(new Document("id", id).append("deleted", false), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
         if (result == null) throw new NotFoundException();
 
-        return HouseDAO.toHouse(result);
+        cache.removeCache(CacheLayer.CacheType.HOUSE, id);
 
+        // TODO void all
+
+        return HouseDAO.toHouse(result);
     }
 
 
-    public House deleteHouse(String id) throws NotFoundException {
+    public House deleteHouse(String houseId, String userId) throws NotFoundException, ForbiddenException {
+
+        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+        if (houseDAO == null) throw new NotFoundException();
+        if (!houseDAO.getOwnerId().equals(userId)) throw new ForbiddenException();
+
         Document doc = new Document("deleted", true);
-        HouseDAO houseToDelete = houses.findOneAndUpdate(new Document("id", id), new Document("$set", doc));
+        HouseDAO houseToDelete = houses.findOneAndUpdate(new Document("id", houseId), new Document("$set", doc));
 
         if (houseToDelete == null) throw new NotFoundException();
-        else {
-            cache.removeCache(CacheLayer.CacheType.HOUSE, id);
 
-            tombstone.insertOne(new DeleteTaskDAO(DELETE_HOUSE_TASK, id));
+        cache.removeCache(CacheLayer.CacheType.HOUSE, houseId);
 
-            //TODO scheduleDeleteTask
+        // TODO void all
 
-            return houseToDelete.toHouse();
-        }
+        tombstone.insertOne(new DeleteTaskDAO(DELETE_HOUSE_TASK, houseId));
+
+        return houseToDelete.toHouse();
     }
 
     // RENTALS
 
     public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null) throw new NotFoundException();
-        //if (!houseDAO.getOwnerId().equals(userId)) cookie
-        //throw new ForbiddenException();
-
-        // use cookie to check if user is owner of house
+        if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
+        if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
 
         rental.setFree(true);
 
         rentals.insertOne(Rental.toDAO(rental));
+
+        // TODO void rentals from houseId, if discounted void discounted
 
         return rental;
     }
 
     public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException {
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null) throw new NotFoundException();
-
-        //UserDAO userDAO = users.find(new Document("id", userId)).first(); TODO COOKIE
-        //if (userDAO == null)
-        //throw new NotFoundException();
-
-        //add cookie user id verification
+        if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
         Document rentalUpdate = new Document();
 
@@ -405,15 +402,21 @@ public class DataLayer {
         Document doc = new Document("$set", rentalUpdate);
         RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
-        // update/add to cache
+        cache.removeCache(CacheLayer.CacheType.RENTALS, houseId);
+
+        // todo id discounted => void cache
+
         if (result == null) throw new NotFoundException();
 
         return RentalDAO.toRental(result);
     }
 
     public List<Rental> listRentals(String houseId) throws NotFoundException {
+
+        cache.readCache(CacheLayer.CacheType.RENTALS, houseId, House[].class);
+
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null) throw new NotFoundException();
+        if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
         List<Rental> rentalsList = new ArrayList<>();
         for (RentalDAO rental : rentals.find(eq("houseId", houseId))) {
@@ -423,9 +426,6 @@ public class DataLayer {
     }
 
     public Rental createRent(String houseId, String rentalId, Renter renter) throws NotFoundException {
-        //HouseDAO house = houses.find(new Document("id", houseId)).first();
-        //if (house == null)
-        //    throw new NotFoundException();
 
         Document doc = new Document("renterId", renter.getId());
         doc.append("free", false);
@@ -435,38 +435,53 @@ public class DataLayer {
         // update/add to cache
         if (result == null) throw new NotFoundException();
 
+        // todo void houseRentals id discounted void discounted
+
         return RentalDAO.toRental(result);
     }
 
     public List<House> getLocationHouses(String location) throws NotFoundException {
+
+        // todo check cash
         List<House> result = new ArrayList<>();
-        for (HouseDAO house : houses.find(new Document("location", location))) {
+        for (HouseDAO house : houses.find(new Document("location", location).append("deleted", false))) {
             result.add(HouseDAO.toHouse(house));
         }
+
+        cache.addCache(CacheLayer.CacheType.HOUSES_LOCATION, location, result.toArray());
 
         return result;
     }
 
     public List<House> getDiscountHouses() {
 
+        // TODO check cache
         HashMap<String, House> result = new HashMap<>();
-        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")))) {
+        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")).append("free", true))) { // TODO TEST
             String id = rental.getHouseId();
             result.put(id, Objects.requireNonNull(houses.find(new Document("id", rental.getHouseId())).first()).toHouse());
         }
 
+        cache.addCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", result.values().toArray());
+
         return result.values().stream().toList();
     }
 
-    public List<String> getUserHouses(String id) throws NotFoundException {
+    public List<House> getUserHouses(String id) throws NotFoundException {
+
+        cache.readCache(CacheLayer.CacheType.HOUSE_USER, id, House[].class);
+
         UserDAO userDAO = users.find(new Document("id", id)).first();
 
         if (userDAO == null) throw new NotFoundException();
 
-        List<String> result = new ArrayList<>();
+        List<House> result = new ArrayList<>();
         for (HouseDAO house : houses.find(eq("ownerId", id))) {
-            result.add(house.getId());
+            result.add(HouseDAO.toHouse(house));
         }
+
+        cache.addCache(CacheLayer.CacheType.HOUSE_USER, id, result.toArray());
+
         return result;
     }
 }

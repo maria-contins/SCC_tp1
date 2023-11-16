@@ -12,13 +12,17 @@ public class CacheLayer {
         private static final boolean CACHE_ON = System.getenv("CACHE_ON").equals("1");
 
         public enum CacheType {
-            HOUSE, COOKIE, RENTAL, USER
+            HOUSE, COOKIE, HOUSES_DISCOUNTED, HOUSES_LOCATION, HOUSE_USER, USER, QUESTION_LIST, RENTALS
         }
 
-        public static final String HOUSE_CACHE = "house:";
-        public static final String COOKIE_CACHE = "cookie:";
-        public static final String RENTAL_CACHE = "rental:";
-        public static final String USER_CACHE = "user:";
+    public static final String HOUSE_CACHE = "house:";
+    public static final String COOKIE_CACHE = "cookie:";
+    public static final String RENTALS_CACHE = "rentalsList:";
+    public static final String USER_CACHE = "user:";
+    public static final String QUESTION_LIST_CACHE = "questionList:";
+    public static final String HOUSE_DISCOUNTED_LIST_CACHE = "houseDiscountedList:";
+    public static final String HOUSE_LOCATION_LIST_CACHE = "houseLocationList:";
+    public static final String HOUSE_USER_LIST_CACHE = "houseUserList:";
 
         private static JedisPool instance;
 
@@ -48,20 +52,19 @@ public class CacheLayer {
         }
 
 
-        private String getCacheKeyPrefix(CacheType ct) {
-            switch (ct) {
-                case HOUSE:
-                    return HOUSE_CACHE;
-                case COOKIE:
-                    return COOKIE_CACHE;
-                case RENTAL:
-                    return RENTAL_CACHE;
-                case USER:
-                    return USER_CACHE;
-                default:
-                    return "";
-            }
-        }
+    private String getCacheKeyPrefix(CacheType ct) {
+        return switch (ct) {
+            case HOUSE -> HOUSE_CACHE;
+            case COOKIE -> COOKIE_CACHE;
+            case USER -> USER_CACHE;
+            case QUESTION_LIST -> QUESTION_LIST_CACHE;
+            case HOUSES_DISCOUNTED -> HOUSE_DISCOUNTED_LIST_CACHE;
+            case HOUSES_LOCATION -> HOUSE_LOCATION_LIST_CACHE;
+            case HOUSE_USER -> HOUSE_USER_LIST_CACHE;
+            case RENTALS -> RENTALS_CACHE;
+            default -> "";
+        };
+    }
 
 
         public <T> void addCache(CacheType ct, String key, T value) {
@@ -70,6 +73,9 @@ public class CacheLayer {
             }
             try (Jedis jedis = getCachePool().getResource()) {
                 jedis.set(getCacheKeyPrefix(ct) + key, mapper.writeValueAsString(value));
+                if(ct == CacheType.COOKIE){
+                    jedis.expire(getCacheKeyPrefix(ct) + key, 3600);
+                }
 
 
             } catch (Exception e) {

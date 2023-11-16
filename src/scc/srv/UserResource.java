@@ -7,6 +7,7 @@ import scc.data.CacheLayer;
 import scc.data.DataLayer;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import scc.entities.House.House;
 import scc.entities.User.Auth;
 import scc.entities.User.User;
 import scc.exceptions.DuplicateException;
@@ -22,6 +23,8 @@ public class UserResource {
 
     //CosmosDBLayer dataLayer;
     DataLayer dataLayer;
+
+    public static final String SCC_SESSION = "scc:session";
 
     //private static final boolean DEBUG = System.getenv("DEBUG").equals("1"); //retirando esta linha e a de cima funciona
 
@@ -90,9 +93,9 @@ public class UserResource {
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public User updateUser(@PathParam("id") String id, User user) {
+    public User updateUser(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, User user) {
         try {
-            // try check auth else throw unauthorized
+            if(!dataLayer.matchUserToCookie(cookie, id)) throw new WebApplicationException(Response.Status.UNAUTHORIZED);
             return dataLayer.updateUser(id, user);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
@@ -123,14 +126,11 @@ public class UserResource {
         }
     }
 
-
-    //TODO get {id}/houses
-
     /*List of houses of a given user;*/
     @GET
     @Path("/{id}/houses")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<String> getUserHouses(@PathParam("id") String id) {
+    public List<House> getUserHouses(@PathParam("id") String id) {
         try {
             return dataLayer.getUserHouses(id);
         } catch (NotFoundException e) {
