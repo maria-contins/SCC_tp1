@@ -149,9 +149,12 @@ sql_cosmos_depl(){
 
 mongo_cosmos_depl(){
     generate_mongo_cosmos
-	az group deployment create -g $RESOURCE_GROUP --template-file depl.json
+	  az group deployment create -g $RESOURCE_GROUP --template-file depl.json
    	az cosmosdb mongodb database create --account-name $COSMOS_DB_ACCOUNT_NAME --name $DATABASE_NAME --resource-group $RESOURCE_GROUP --throughput 400
-    az cosmosdb mongodb collection create --account-name $COSMOS_DB_ACCOUNT_NAME --database-name $DATABASE_NAME --name $CO_NAME --resource-group $RESOURCE_GROUP
+    for collection in ${CO_NAME//;/$'\n'}
+        do
+            az cosmosdb mongodb collection create --account-name $COSMOS_DB_ACCOUNT_NAME --database-name $DATABASE_NAME --name $collection --resource-group $RESOURCE_GROUP
+        done
 }
 
 blob_deploy(){

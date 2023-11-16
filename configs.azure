@@ -3,7 +3,7 @@ APP_NAME="scc-backend-57503" # found in the POM
 
 #BLOB STORAGE
 DEPLOY_BLOB="Y" # Y or N
-STORAGE_ACCOUNT_NAME="storageaccountscc2324"
+STORAGE_ACCOUNT_NAME="storageaccscc"
 CONTAINER_NAME="media"
 STORAGE_ACCOUNT_CONNECTION_STRING_VAR_NAME="storageAccountConnectionString"
 

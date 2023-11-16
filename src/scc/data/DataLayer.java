@@ -28,6 +28,7 @@ import scc.entities.Question.QuestionDAO;
 import scc.entities.Rental.Rental;
 import scc.entities.Rental.RentalDAO;
 import scc.entities.User.*;
+import scc.entities.User.Auth;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
@@ -103,7 +104,7 @@ public class DataLayer {
     // AUXILIARY METHODS
 
     private boolean pictureExists(String photoId) {
-        return !photoId.isEmpty() && containerClient.getBlobClient(photoId).exists();
+        return photoId.isEmpty() || containerClient.getBlobClient(photoId).exists();
     }
 
     private boolean houseExists(String houseId) {
