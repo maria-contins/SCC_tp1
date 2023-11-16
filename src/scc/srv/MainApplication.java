@@ -12,8 +12,6 @@ public class MainApplication extends Application
 {
 	private Set<Object> singletons = new HashSet<Object>();
 	private Set<Class<?>> resources = new HashSet<Class<?>>();
-
-	// TODO create collections on startup
 	public MainApplication() {
 		DataLayer dm = new DataLayer();
 		singletons.add(dm);

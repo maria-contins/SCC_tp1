@@ -53,7 +53,6 @@ public class HouseResource {
         }
     }
 
-    //TODO {id}/param loc = etv
     @GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
@@ -75,7 +74,7 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public House updateHouse(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, House house) {
         try {
-            if (dataLayer.matchUserToCookie(cookie, house.getOwnerId())) {
+            if (!dataLayer.matchUserToCookie(cookie, house.getOwnerId())) {
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
             }
             return dataLayer.updateHouse(id, house);
