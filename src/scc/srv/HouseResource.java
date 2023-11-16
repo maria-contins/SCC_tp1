@@ -48,6 +48,22 @@ public class HouseResource {
         }
     }
 
+    //TODO {id}/param loc = etv
+    @GET
+    @Path("/")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<House> getLocationHouses(@QueryParam("location") String location) {
+        if (location != null) {
+            try {
+                return dataLayer.getLocationHouses(location);
+            } catch (Exception e) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            }
+        } else
+            return dataLayer.getDiscountHouses();
+
+    }
+
     @PATCH
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -151,34 +167,7 @@ public class HouseResource {
     public Rental createRenter(@PathParam("id") String id, @PathParam("rentalId") String rentalId, Renter renter) {
         try {
             return dataLayer.createRent(id, rentalId, renter);
-        } catch (Exception e) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
-    }
-
-    //TODO {id}/param loc = etv
-    @GET
-    @Path("/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @QueryParam("location")
-    public List<House> getLocationHouses(@PathParam("id") String id, String location) {
-        try {
-            return dataLayer.getLocationHouses(id, location);
-        } catch (Exception e) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
-    }
-
-    //TODO {id}/param disc = yes
-    @GET
-    @Path("/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<House> getDiscountHouses(@PathParam("id") String id) {
-        try {
-            return dataLayer.getDiscountHouses(id);
-        } catch (Exception e) {
+        } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }

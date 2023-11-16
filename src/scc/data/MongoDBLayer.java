@@ -25,18 +25,13 @@ import scc.entities.Question.Question;
 import scc.entities.Question.QuestionDAO;
 import scc.entities.Rental.Rental;
 import scc.entities.Rental.RentalDAO;
-import scc.entities.User.Auth;
-import scc.entities.User.Renter;
-import scc.entities.User.User;
-import scc.entities.User.UserDAO;
+import scc.entities.User.*;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
 import scc.utils.Hash;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class MongoDBLayer {
 
@@ -389,14 +384,15 @@ public class MongoDBLayer {
         return rentalsList;
     }
 
-    public Rental createRent(String houseId, String rentalId, Renter renter) throws NotFoundException, DuplicateException, ForbiddenException {
-        HouseDAO house = houses.find(eq(new Document("id", houseId))).first();
-        if (house == null)
-            throw new NotFoundException();
+    public Rental createRent(String houseId, String rentalId, Renter renter) throws NotFoundException {
+        //HouseDAO house = houses.find(new Document("id", houseId)).first();
+        //if (house == null)
+        //    throw new NotFoundException();
 
         Document doc = new Document("renterId", renter.getId());
         doc.append("free", false);
-        RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId).append("houseId", houseId), doc, new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+
+        RentalDAO result = rentals.findOneAndUpdate(new Document("id", rentalId).append("houseId", houseId), new Document("$set", doc), new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
 
         // update/add to cache
         if (result == null)
@@ -405,32 +401,24 @@ public class MongoDBLayer {
         return RentalDAO.toRental(result);
     }
 
-    public List<House> getLocationHouses(String houseId, String location) throws NotFoundException {
-        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-
-        if (houseDAO == null)
-            throw new NotFoundException();
-
+    public List<House> getLocationHouses(String location) throws NotFoundException {
         List<House> result = new ArrayList<>();
-        for (HouseDAO house : houses.find(eq("location", location))) {
+        for (HouseDAO house : houses.find(new Document("location", location))) {
             result.add(HouseDAO.toHouse(house));
         }
 
         return result;
     }
 
-    public List<House> getDiscountHouses(String houseId) throws NotFoundException {
-        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+    public List<House> getDiscountHouses() {
 
-        if (houseDAO == null)
-            throw new NotFoundException();
-
-        List<House> result = new ArrayList<>();
-        for (HouseDAO house : houses.find(ne("discount", ""))) {
-            result.add(HouseDAO.toHouse(house));
+        HashMap<String, House> result = new HashMap<>();
+        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")))) {
+            String id = rental.getHouseId();
+            result.put(id, Objects.requireNonNull(houses.find(new Document("id", rental.getHouseId())).first()).toHouse());
         }
 
-        return result;
+        return result.values().stream().toList();
     }
 
     public List<String> getUserHouses(String id) throws NotFoundException {
