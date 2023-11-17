@@ -113,7 +113,7 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Question createQuestion(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, Question question) {
         try {
-            if (dataLayer.matchUserToCookie(cookie, question.getAuthorId())) {
+            if (!dataLayer.matchUserToCookie(cookie, question.getAuthorId())) {
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
             }
             return dataLayer.createQuestion(id, question);

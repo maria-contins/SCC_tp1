@@ -230,9 +230,11 @@ az_fun_deploy(){
 
     #Add connection string of main storage to Azure function
     az functionapp config appsettings set --name $AZ_FUN_APP_NAME --resource-group $RESOURCE_GROUP --settings "BlobStoreConnection=$(az storage account show-connection-string -g $RESOURCE_GROUP -n $STORAGE_ACCOUNT_NAME | python3 -c "import sys, json; print(json.load(sys.stdin)['connectionString'])")"
+    az functionapp config appsettings set --name $AZ_FUN_APP_NAME --resource-group $RESOURCE_GROUP --settings "mongoConnectionString=$(az cosmosdb keys list --name $COSMOS_DB_ACCOUNT_NAME --resource-group $RESOURCE_GROUP --type connection-strings | python3 -c "import sys, json; print(json.load(sys.stdin)['connectionStrings'][0]['connectionString'])")"
+    az functionapp config appsettings set --name $AZ_FUN_APP_NAME --resource-group $RESOURCE_GROUP --settings "$DB_NAME_VAR_NAME=$DATABASE_NAME"
 
     #Add connection string of replica to Azure function
-    az functionapp config appsettings set --name $AZ_FUN_APP_NAME --resource-group $RESOURCE_GROUP --settings "$STORAGE_ACCOUNT_REPLICA_CONNECTION_STRING_VAR_NAME=$(az storage account show-connection-string -g $RESOURCE_GROUP -n $STORAGE_ACCOUNT_REPLICA_NAME | python3 -c "import sys, json; print(json.load(sys.stdin)['connectionString'])")"
+    #az functionapp config appsettings set --name $AZ_FUN_APP_NAME --resource-group $RESOURCE_GROUP --settings "$STORAGE_ACCOUNT_REPLICA_CONNECTION_STRING_VAR_NAME=$(az storage account show-connection-string -g $RESOURCE_GROUP -n $STORAGE_ACCOUNT_REPLICA_NAME | python3 -c "import sys, json; print(json.load(sys.stdin)['connectionString'])")"
 
     cd ..
 }

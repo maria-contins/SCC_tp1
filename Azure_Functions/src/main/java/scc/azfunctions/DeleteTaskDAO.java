@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public class DeleteTaskDAO {
 
+    private String _id;
     @BsonProperty("id")
     private String id;
     private String taskType; //DeleteUser, DeleteHouse
@@ -18,6 +19,14 @@ public class DeleteTaskDAO {
     }
 
     public DeleteTaskDAO() {
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
+    }
+
+    public String get_id() {
+        return _id;
     }
 
     public String getId() {

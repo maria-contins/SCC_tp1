@@ -60,17 +60,23 @@ public class TimerFunction {
                     UserDAO user = users.findOneAndDelete(new Document("id", deletedUserId));
 
                     //Replace owner of houses owned by deletedUser
-                    houses.updateMany(new Document("owner", deletedUserId), new Document("$set", new Document("owner", "deletedUser")));
+                    houses.updateMany(new Document("ownerId", deletedUserId), new Document("$set", new Document("ownerId", "deletedUser")));
 
                     //Replace deleted user's id in rentals they have made
                     rentals.updateMany(new Document("renterId", deletedUserId), new Document("$set", new Document("renterId", "deletedUser")));
+
+                    //Replace deleted user's id in questions they posted
+                    questions.updateMany(new Document("authorId", deletedUserId), new Document("$set", new Document("authorId", "deletedUser")));
+
+                    //delete task
+                    tasks.deleteOne(new Document("id", mt.getId()));
 
                     break;
                 case DELETE_HOUSE_TASK:
                     String deletedHouseId = mt.getEntityId();
 
                     //Delete House from DB
-                    HouseDAO deletedHouse = houses.findOneAndDelete(new Document("id", deletedHouseId));
+                    houses.deleteOne(new Document("id", deletedHouseId));
 
                     //Delete questions related to deleted house
                     questions.deleteMany(new Document("houseId", deletedHouseId));
@@ -78,10 +84,12 @@ public class TimerFunction {
                     //Delete rentals related to deleted house
                     rentals.deleteMany(new Document("houseId", deletedHouseId));
 
+                    tasks.deleteOne(new Document("id", mt.getId()));
+
                 default:
                     break;
             }
         }
-        tasks.deleteMany(new Document());
+
     }
 }
