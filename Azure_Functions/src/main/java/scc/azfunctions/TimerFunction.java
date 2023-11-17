@@ -64,6 +64,8 @@ public class TimerFunction {
 
                     //Replace deleted user's id in rentals they have made
                     rentals.updateMany(new Document("renterId", deletedUserId), new Document("$set", new Document("renterId", "deletedUser")));
+                    rentals.updateMany(new Document("renterId", deletedUserId), new Document("$set", new Document("ownerId", "deletedUser")));
+
 
                     //Replace deleted user's id in questions they posted
                     questions.updateMany(new Document("authorId", deletedUserId), new Document("$set", new Document("authorId", "deletedUser")));
