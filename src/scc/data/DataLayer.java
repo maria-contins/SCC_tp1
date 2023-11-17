@@ -401,6 +401,7 @@ public class DataLayer {
     // RENTALS
 
     public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException {
+        if (!houseId.equals(rental.getHouseId())) throw new ForbiddenException();
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
         if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
         if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
@@ -510,12 +511,12 @@ public class DataLayer {
     }*/
 
     public List<House> getDiscountHouses() {
-        House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
-        if (housesCached != null) return Arrays.asList(housesCached);
+        //House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
+        //f (housesCached != null) return Arrays.asList(housesCached);
 
         HashMap<String, House> result = new HashMap<>();
-        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")))) {
-            if (rental.isFree()) {
+        for (RentalDAO rental : rentals.find(new Document("free", true))) {
+            if (!rental.getDiscount().equals("0")) {
                 String id = rental.getHouseId();
                 result.put(id, Objects.requireNonNull(houses.find(new Document("id", rental.getHouseId())).first()).toHouse());
             }
@@ -537,7 +538,8 @@ public class DataLayer {
 
         List<House> result = new ArrayList<>();
         for (HouseDAO house : houses.find(eq("ownerId", id))) {
-            result.add(HouseDAO.toHouse(house));
+            if (!house.isDeleted())
+                result.add(HouseDAO.toHouse(house));
         }
 
         cache.addCache(CacheLayer.CacheType.HOUSE_USER, id, result.toArray());

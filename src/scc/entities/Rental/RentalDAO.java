@@ -15,14 +15,13 @@ public class RentalDAO {
     private String fromDate;
     private String toDate;
     private boolean free;
-
     private String ownerId;
 
     public RentalDAO() {
 
     }
 
-    public RentalDAO(String id, String houseId, String renterId, String price, String discount, String fromDate, String toDate, String ownerId) {
+    public RentalDAO(String id, String houseId, String renterId, String price, String discount, String fromDate, String toDate, String ownerId, boolean free) {
         super();
         this.id = id;
         this.houseId = houseId;
@@ -32,6 +31,7 @@ public class RentalDAO {
         this.fromDate = fromDate;
         this.toDate = toDate;
         this.ownerId = ownerId;
+        this.free = free;
     }
 
     public boolean isFree() {
@@ -116,12 +116,7 @@ public class RentalDAO {
 
     @BsonIgnore
     public static Rental toRental(RentalDAO rentalDAO) {
-        return new Rental(rentalDAO.getId(), rentalDAO.getHouseId(), rentalDAO.getRenterId(), rentalDAO.getPrice(), rentalDAO.getDiscount(),rentalDAO.getFromDate(), rentalDAO.getToDate(), rentalDAO.getOwnerId());
-    }
-
-    @BsonIgnore
-    public static RentalDAO toDAO(Rental rental) {
-        return new RentalDAO(rental.getId(), rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getDiscount(), rental.getFromDate(), rental.getToDate(), rental.getOwnerId());
+        return new Rental(rentalDAO.getId(), rentalDAO.getHouseId(), rentalDAO.getRenterId(), rentalDAO.getPrice(), rentalDAO.getDiscount(),rentalDAO.getFromDate(), rentalDAO.getToDate(), rentalDAO.getOwnerId(), rentalDAO.isFree());
     }
 
     @Override

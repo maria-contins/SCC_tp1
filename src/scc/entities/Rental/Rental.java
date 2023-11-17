@@ -23,7 +23,7 @@
 		}
 
 		//Use house name or the actual instance ??
-		public Rental(String id, String houseId, String renterId, String price, String discount, String fromDate, String toDate, String ownerId) {
+		public Rental(String id, String houseId, String renterId, String price, String discount, String fromDate, String toDate, String ownerId, boolean free) {
 			super();
 			this.id = id;
 			this.houseId = houseId;
@@ -33,6 +33,7 @@
 			this.fromDate = fromDate;
 			this.toDate = toDate;
 			this.ownerId = ownerId;
+			this.free = free;
 		}
 
 		public boolean isFree() {
@@ -109,6 +110,6 @@
 		}
 
 		public static RentalDAO toDAO(Rental rental) {
-			return new RentalDAO(rental.getId(), rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getDiscount(), rental.getFromDate(), rental.getToDate(), rental.getOwnerId());
+			return new RentalDAO(rental.getId(), rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getDiscount(), rental.getFromDate(), rental.getToDate(), rental.getOwnerId(), rental.isFree());
 		}
 	}
