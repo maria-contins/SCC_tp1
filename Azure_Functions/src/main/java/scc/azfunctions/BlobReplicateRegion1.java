@@ -1,4 +1,4 @@
-package src.main.java.scc.serverless;
+package scc.azfunctions;
 
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;

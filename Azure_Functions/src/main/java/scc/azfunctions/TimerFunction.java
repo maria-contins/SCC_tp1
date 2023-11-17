@@ -1,4 +1,4 @@
-package scc.srv;
+package scc.azfunctions;
 
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -10,8 +10,6 @@ import com.mongodb.client.*;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
-import scc.entities.House.House;
-import scc.entities.User.UserDAO;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;

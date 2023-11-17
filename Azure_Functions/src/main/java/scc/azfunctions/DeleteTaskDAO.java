@@ -1,53 +1,57 @@
-package src.main.java.scc.serverless;
+package scc.azfunctions;
+
+import org.bson.codecs.pojo.annotations.BsonProperty;
 
 import java.util.Objects;
 
 public class DeleteTaskDAO {
-        private String id;
-        private String taskType; //DeleteUser, DeleteHouse
-        private String entityId;
 
-        public DeleteTaskDAO(String id, String taskType, String entityId) {
-            this.id = id;
-            this.taskType = taskType;
-            this.entityId = entityId;
-        }
+    @BsonProperty("id")
+    private String id;
+    private String taskType; //DeleteUser, DeleteHouse
+    private String entityId;
 
-        public DeleteTaskDAO() {
-        }
+    public DeleteTaskDAO(String id, String taskType, String entityId) {
+        this.id = id;
+        this.taskType = taskType;
+        this.entityId = entityId;
+    }
 
-        public String getId() {
-            return id;
-        }
+    public DeleteTaskDAO() {
+    }
 
-        public void setId(String id) {
-            this.id = id;
-        }
+    public String getId() {
+        return id;
+    }
 
-        public String getTaskType() {
-            return taskType;
-        }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-        public void setTaskType(String taskType) {
-            this.taskType = taskType;
-        }
+    public String getTaskType() {
+        return taskType;
+    }
 
-        public String getEntityId() {
-            return entityId;
-        }
+    public void setTaskType(String taskType) {
+        this.taskType = taskType;
+    }
 
-        public void setEntityId(String entityId) {
-            this.entityId = entityId;
-        }
+    public String getEntityId() {
+        return entityId;
+    }
 
-        @Override
-        public String toString() {
-            return "DeleteTaskDAO{" +
-                    "id='" + id + '\'' +
-                    ", taskType='" + taskType + '\'' +
-                    ", entityId='" + entityId + '\'' +
-                    '}';
-        }
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
+    @Override
+    public String toString() {
+        return "DeleteTaskDAO{" +
+                "id='" + id + '\'' +
+                ", taskType='" + taskType + '\'' +
+                ", entityId='" + entityId + '\'' +
+                '}';
+    }
 
     @Override
     public boolean equals(Object o) {

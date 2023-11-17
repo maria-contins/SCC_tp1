@@ -1,10 +1,4 @@
-package scc.entities.Question;
-
-import java.util.Objects;
-
-import org.bson.codecs.pojo.annotations.BsonIgnore;
-import scc.entities.User.User;
-import scc.entities.User.UserDAO;
+package scc.azfunctions;
 
 public class QuestionDAO {
 
@@ -77,10 +71,6 @@ public class QuestionDAO {
         this.repliedToId = repliedToId;
     }
 
-    @BsonIgnore
-    public static Question toQuestion(QuestionDAO questionDAO) {
-        return new Question(questionDAO.id, questionDAO.HouseId, questionDAO.authorId, questionDAO.body, questionDAO.repliedToId);
-    }
 
     @Override
     public String toString() {
@@ -92,11 +82,6 @@ public class QuestionDAO {
                 ", repliedToId='" + repliedToId + '\'' +
                 ", answered=" + answered +
                 '}';
-    }
-
-    @BsonIgnore
-    public Question toQuestion() {
-        return new Question(id, HouseId, authorId, body, repliedToId);
     }
 
 

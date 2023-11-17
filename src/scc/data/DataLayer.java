@@ -4,6 +4,12 @@ import static com.mongodb.client.model.Filters.*;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
+import com.azure.core.credential.AzureKeyCredential;
+/*import com.azure.search.documents.SearchClient;
+import com.azure.search.documents.SearchClientBuilder;
+import com.azure.search.documents.models.SearchOptions;
+import com.azure.search.documents.util.SearchPagedIterable;
+import com.azure.search.documents.util.SearchPagedResponse;*/
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
 
@@ -38,6 +44,11 @@ import scc.utils.Hash;
 import java.util.*;
 
 public class DataLayer {
+    //private static final String SearchServiceQueryKey = System.getenv("SEARCH_QUERY_KEY");
+    //private static final String SearchServiceUrl = System.getenv("SEARCH_URL");
+    //private static final String IndexName = System.getenv("SEARCH_INDEX");
+    //SearchClient searchClient;
+    //SearchOptions searchOptions;
 
     private static final String DELETE_USER_TASK = "deleteUser";
 
@@ -76,6 +87,11 @@ public class DataLayer {
         questions = database.getCollection("questions", QuestionDAO.class);
         tombstone = database.getCollection("tombstone", DeleteTaskDAO.class);
         cache = new CacheLayer();
+
+        //if(SearchServiceQueryKey != null && SearchServiceUrl != null && IndexName != null){
+            //searchClient = new SearchClientBuilder().credential(new AzureKeyCredential(SearchServiceQueryKey)).endpoint(SearchServiceUrl).indexName(IndexName).buildClient();
+            //searchOptions = new SearchOptions().setIncludeTotalCount(true).setSelect("id", "name", "location", "description").setSearchFields("description").setTop(20);
+        //}
     }
 
 
@@ -389,8 +405,7 @@ public class DataLayer {
         if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
         if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
 
-
-        // TODO not verifying same ids
+        if (rental.getRenterId().equals(houseDAO.getOwnerId())) throw new ForbiddenException();
         rental.setFree(true);
 
         rentals.insertOne(Rental.toDAO(rental));
@@ -480,14 +495,30 @@ public class DataLayer {
         return result;
     }
 
+    /*public List<House> searchHouses(String query) {
+        List<House> found = new ArrayList<>();
+
+        SearchPagedIterable searchPagedIterable = searchClient.search(query, searchOptions, null);
+
+        for (SearchPagedResponse resultResponse : searchPagedIterable.iterableByPage()) {
+            resultResponse.getValue().forEach(searchResult -> {
+                found.add(searchResult.getDocument(House.class));
+            });
+        }
+
+        return found;
+    }*/
+
     public List<House> getDiscountHouses() {
         House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
         if (housesCached != null) return Arrays.asList(housesCached);
 
         HashMap<String, House> result = new HashMap<>();
-        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")).append("free", true))) { // TODO TEST
-            String id = rental.getHouseId();
-            result.put(id, Objects.requireNonNull(houses.find(new Document("id", rental.getHouseId())).first()).toHouse());
+        for (RentalDAO rental : rentals.find(new Document("discount", new Document("$ne", "0")))) {
+            if (rental.isFree()) {
+                String id = rental.getHouseId();
+                result.put(id, Objects.requireNonNull(houses.find(new Document("id", rental.getHouseId())).first()).toHouse());
+            }
         }
 
         cache.addCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", result.values().toArray());

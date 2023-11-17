@@ -1,10 +1,7 @@
-package scc.entities.House;
+package scc.azfunctions;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
-import scc.entities.House.Availability.Availability;
-import scc.entities.User.User;
-import scc.entities.User.UserDAO;
 
 import java.util.List;
 import java.util.Objects;
@@ -111,8 +108,4 @@ public class HouseDAO {
                 + description + ", media=" + media + "location=" + location + ", deleted=" + deleted + "]";
     }
 
-    @BsonIgnore
-    public House toHouse(List<Availability> availability) {
-        return new House(id, name, location, description, media, deleted, availability);
-    }
 }

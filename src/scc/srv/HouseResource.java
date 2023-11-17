@@ -4,6 +4,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.annotations.Query;
 import scc.data.DataLayer;
 import scc.entities.House.House;
 import scc.entities.Question.Question;
@@ -56,15 +57,17 @@ public class HouseResource {
     @GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<House> getLocationHouses(@QueryParam("location") String location, @QueryParam("discount") String discount) {
+    public List<House> getHouses(@QueryParam("location") String location, @QueryParam("discount") String discount /*@QueryParam("query") String query*/) {
         if (location != null) {
             try {
                 return dataLayer.getLocationHouses(location);
             } catch (Exception e) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
-        } if (discount.equals("true")) {
+        } if (discount != null) {
             return dataLayer.getDiscountHouses();
+        /*} if (query != null) {
+            return dataLayer.searchHouses(query);*/
         } else
             return dataLayer.getAllHouses();
 

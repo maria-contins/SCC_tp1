@@ -1,4 +1,4 @@
-package scc.entities.Rental;
+package scc.azfunctions;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
@@ -82,16 +82,6 @@ public class RentalDAO {
 
     public String get_id() {
         return _id;
-    }
-
-    @BsonIgnore
-    public static Rental toRental(RentalDAO rentalDAO) {
-        return new Rental(rentalDAO.id, rentalDAO.getHouseId(), rentalDAO.getRenterId(), rentalDAO.getPrice(), rentalDAO.getFromDate(), rentalDAO.getToDate());
-    }
-
-    @BsonIgnore
-    public static RentalDAO toDAO(Rental rental) {
-        return new RentalDAO(rental.getHouseId(), rental.getRenterId(), rental.getPrice(), rental.getFromDate(), rental.getToDate());
     }
 
     @Override

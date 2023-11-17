@@ -1,4 +1,4 @@
-package scc.entities.User;
+package scc.azfunctions;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
@@ -91,10 +91,6 @@ public class UserDAO {
         this.houseIds = houseIds;
     }
 
-    @BsonIgnore
-    public static User toUser(UserDAO userDAO) {
-        return new User( userDAO.id, userDAO.nickname, userDAO.deleted, userDAO.password, userDAO.photoId, userDAO.houseIds);
-    }
 
     @Override
     public boolean equals(Object obj) {
@@ -114,11 +110,4 @@ public class UserDAO {
         return "UserDAO [_id=" + _id + ", id=" + id + ", nickname=" + nickname + ", password="
                 + password + ", photoId=" + photoId + ", houseIds=" + houseIds + "]";
     }
-
-    @BsonIgnore
-    public User toUser() {
-        return new User(id, nickname, deleted, password, photoId, houseIds);
-    }
-
-
 }
