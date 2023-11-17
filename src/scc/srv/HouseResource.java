@@ -57,20 +57,19 @@ public class HouseResource {
     @GET
     @Path("/")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<House> getHouses(@QueryParam("location") String location, @QueryParam("discount") String discount /*@QueryParam("query") String query*/) {
-        if (location != null) {
+    public List<House> getHouses(@QueryParam("location") String location, @QueryParam("discount") String discount, @QueryParam("query") String query) {
+        if (query != null) {
+            return dataLayer.searchHouses(query, location);
+        } else if (location != null) {
             try {
                 return dataLayer.getLocationHouses(location);
             } catch (Exception e) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
-        } if (discount != null) {
+        } else if (discount != null) {
             return dataLayer.getDiscountHouses();
-        /*} if (query != null) {
-            return dataLayer.searchHouses(query);*/
         } else
             return dataLayer.getAllHouses();
-
     }
 
     @PATCH
