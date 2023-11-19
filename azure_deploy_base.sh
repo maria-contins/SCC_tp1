@@ -13,7 +13,7 @@ printf "{
             \"type\": \"Microsoft.DocumentDB/databaseAccounts\",
             \"apiVersion\": \"2021-07-01-preview\",
             \"name\": \"$COSMOS_DB_ACCOUNT_NAME\",
-            \"location\": \"Canada Central\",
+            \"location\": \"West Europe\",
             \"tags\": {
                 \"defaultExperience\": \"Core (SQL)\",
                 \"hidden-cosmos-mmspecial\": \"\"
@@ -80,7 +80,7 @@ printf "{
             \"type\": \"Microsoft.DocumentDB/databaseAccounts\",
             \"apiVersion\": \"2021-07-01-preview\",
             \"name\": \"$COSMOS_DB_ACCOUNT_NAME\",
-            \"location\": \"Sweden Central\",
+            \"location\": \"West Europe\",
             \"kind\": \"MongoDB\",
             \"identity\": {
                 \"type\": \"None\"
@@ -110,7 +110,7 @@ printf "{
                 },
                 \"locations\": [
                     {
-                        \"locationName\": \"Sweden Central\",
+                        \"locationName\": \"West Europe\",
                         \"failoverPriority\": 0,
                         \"isZoneRedundant\": false
                     }
@@ -150,7 +150,7 @@ sql_cosmos_depl(){
 mongo_cosmos_depl(){
     generate_mongo_cosmos
 	  az group deployment create -g $RESOURCE_GROUP --template-file depl.json
-   	az cosmosdb mongodb database create --account-name $COSMOS_DB_ACCOUNT_NAME --name $DATABASE_NAME --resource-group $RESOURCE_GROUP --throughput 1000
+   	az cosmosdb mongodb database create --account-name $COSMOS_DB_ACCOUNT_NAME --name $DATABASE_NAME --resource-group $RESOURCE_GROUP --throughput 400
     for collection in ${CO_NAME//;/$'\n'}
         do
             az cosmosdb mongodb collection create --account-name $COSMOS_DB_ACCOUNT_NAME --database-name $DATABASE_NAME --name $collection --resource-group $RESOURCE_GROUP
@@ -159,7 +159,7 @@ mongo_cosmos_depl(){
 
 blob_deploy(){
 
-    az storage account create -n $STORAGE_ACCOUNT_NAME -g $RESOURCE_GROUP -l canadacentral --sku Standard_LRS --allow-blob-public-access
+    az storage account create -n $STORAGE_ACCOUNT_NAME -g $RESOURCE_GROUP -l westeurope --sku Standard_LRS --allow-blob-public-access
 
     #Set container soft-delete to false
     az storage account blob-service-properties update --enable-container-delete-retention false --account-name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCE_GROUP
@@ -211,7 +211,7 @@ db_deploy(){
 }
 
 redis_deploy(){
-    az redis create --location canadacentral --name $REDIS_NAME --resource-group $RESOURCE_GROUP --sku Basic --vm-size c2 --redis-version 6
+    az redis create --location westeurope --name $REDIS_NAME --resource-group $RESOURCE_GROUP --sku Basic --vm-size c0 --redis-version 6
     az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "$REDIS_HOSTNAME_VAR_NAME=$REDIS_NAME.redis.cache.windows.net"
     az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "$REDIS_KEY_VAR_NAME=$(az redis list-keys --name $REDIS_NAME --resource-group $RESOURCE_GROUP | python3 -c "import sys, json; print(json.load(sys.stdin)['primaryKey'])")"
     az functionapp config appsettings set --name $APP_NAME --resource-group $RESOURCE_GROUP --settings "CACHE_ON=$CACHE_ON"
@@ -240,7 +240,7 @@ az_fun_deploy(){
 }
 
 
-az group create -l canadacentral -n $RESOURCE_GROUP
+az group create -l westeurope -n $RESOURCE_GROUP
 
 #Deploy Web-app to Azure
 mvn compile package azure-webapp:deploy

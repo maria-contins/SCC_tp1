@@ -1,5 +1,5 @@
 config:
-  target: 'https://scc24appnortheurope4204.azurewebsites.net/rest'
+  target: 'https://scc-backend-575031.azurewebsites.net/rest'
   plugins:
     metrics-by-endpoint:
       useOnlyRequestNames: true
@@ -27,16 +27,16 @@ scenarios:
               as: "imageId"              # capture the reply as image id to be used in user creation
         - function: "genNewUser"         # Generate the needed information for the user
         - post:
-            url: "/user"
+            url: "/users"
             headers:
               Content-Type: application/json
               Accept: application/json
             json:
               id: "{{ userid }}"
-              name: "{{ name }}"
-              pwd: "{{ pwd }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
               photoId: "{{ imageId }}"
-              houseIds: []
+#              houseIds: []
             afterResponse: "genNewUserReply"    # capture result and store in file
         count: 250
       - loop:                            # let's create 50 users - loop ... count
@@ -51,24 +51,25 @@ scenarios:
               as: "imageId"              # capture the reply as image id to be used in user creation
         - function: "genNewUser"         # Generate the needed information for the user
         - post:
-            url: "/user"
+            url: "/users"
             headers:
               Content-Type: application/json
               Accept: application/json
             json:
               id: "{{ userid }}"
-              name: "{{ name }}"
-              pwd: "{{ pwd }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
               photoId: "{{ imageId }}"
-              houseIds: []
+#              houseIds: []
             afterResponse: "genNewUserReply"    # capture result and store in file
         - post:
-            url: "/user/auth"
+            url: "/users/auth"
             headers:
               Content-Type: application/json
             json:
-              user: "{{ userid }}"
-              pwd: "{{ pwd }}"
+              id: "{{ userid }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
         - loop:                            # let's create 50 users - loop ... count
           - post:                          # First: post image for the house
               url: "/media"
@@ -81,29 +82,36 @@ scenarios:
                 as: "imageId"              # capture the reply as image id to be used in house creation
           - function: "genNewHouse"         # Generate the needed information for the house
           - post:
-              url: "/house"
+              url: "/houses"
               headers:
                 Content-Type: application/json
                 Accept: application/json
               json:
+                id: "{{ houseid }}"
                 name: "{{ name }}"
                 location: "{{ location }}"
                 description: "{{ description }}"
-                owner: "{{ userid }}"
-                images: ["{{ imageId }}"]
+                ownerId: "{{ userid }}"
+                media: ["{{ imageId }}"]
               capture: 
                 json: "$.id"
                 as: "houseid"              # capture the house id to be used in house creation
+          - function: "genRentalId"
           - post:                          # make this house available
-              url: "/house/{{ houseid }}/available"
+              url: "/houses/{{ houseid }}/rentals/availability"
               headers:
                 Content-Type: application/json
                 Accept: application/json
               json:
+                id: "{{ rentalId }}"
+                houseId: "{{ houseid }}"
+                renterId: ""
+                price: "{{ cost }}"
+                discount: "{{ discount }}"
                 fromDate: "12-2023"
                 toDate: "12-2024"
-                cost: "{{ cost }}"
-                discount: "{{ discount }}"
+                ownerId: "{{ userid }}"
+                
           whileTrue: "random90"
         count: 250
 

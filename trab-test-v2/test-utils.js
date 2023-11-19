@@ -8,6 +8,7 @@ module.exports = {
   genNewUser,
   genNewUserReply,
   genNewHouse,
+  genRentalId,
   selectUser,
   selectUserSkewed,
   decideNextAction,
@@ -118,14 +119,14 @@ function selectImageToDownload(context, events, done) {
 /**
  * Select an image to download.
  */
-function selectUser(context, events, done) {
-	if( userIds.length > 0) {
-		context.vars.userId = userIds.sample()
-	} else {
-		delete context.vars.userId
-	}
-	return done()
-}
+// function selectUser(context, events, done) {
+// 	if( userIds.length > 0) {
+// 		context.vars.userId = userIds.sample()
+// 	} else {
+// 		delete context.vars.userId
+// 	}
+// 	return done()
+// }
 
 /**
  * Generate data for a new user using Faker
@@ -146,6 +147,7 @@ function genNewUser(context, events, done) {
 function genNewUserReply(requestParams, response, context, ee, next) {
 	if( response.statusCode >= 200 && response.statusCode < 300 && response.body.length > 0)  {
 		let u = JSON.parse( response.body)
+		u.password = context.vars.pwd
 		users.push(u)
 		fs.writeFileSync('users.data', JSON.stringify(users));
 	}
@@ -156,13 +158,22 @@ function genNewUserReply(requestParams, response, context, ee, next) {
  * Generate data for a new house using Faker
  */
 function genNewHouse(context, events, done) {
-	context.vars.name = `${faker.lorem.words({ min: 1, max: 3 })}`
-	context.vars.location = locations.sample()
+	const name = `${faker.lorem.words({ min: 1, max: 3 })}`
+	const location = locations.sample()
+	context.vars.houseid = name + ":" + location
+	context.vars.name = name
+	context.vars.location = location
 	context.vars.description = `${faker.lorem.paragraph()}`
 	context.vars.cost = random(500) + 200;
 	context.vars.discount = 0;
 	if( random(20) == 0)
 		context.vars.discount = random(5) * 10;
+	return done()
+}
+
+function genRentalId(context, events, done) {
+	context.vars.rentalId = context.vars.houseid + ":" + context.vars.userid +
+	":" + context.vars.cost
 	return done()
 }
 
@@ -172,10 +183,11 @@ function genNewHouse(context, events, done) {
 function selectUser(context, events, done) {
 	if( users.length > 0) {
 		let user = users.sample()
-		context.vars.user = user.id
-		context.vars.pwd = user.pwd
+		context.vars.userid = user.id
+		context.vars.pwd = user.password
+		context.vars.name = user.nickname
 	} else {
-		delete context.vars.user
+		delete context.vars.userid
 		delete context.vars.pwd
 	}
 	return done()
@@ -188,10 +200,12 @@ function selectUser(context, events, done) {
 function selectUserSkewed(context, events, done) {
 	if( users.length > 0) {
 		let user = users.sampleSkewed()
-		context.vars.user = user.id
-		context.vars.pwd = user.pwd
+		context.vars.userid = user.id
+		context.vars.pwd = user.password
+		context.vars.name = user.nickname
+		conte
 	} else {
-		delete context.vars.user
+		delete context.vars.userid
 		delete context.vars.pwd
 	}
 	return done()
@@ -200,15 +214,15 @@ function selectUserSkewed(context, events, done) {
 
 /**
  * Select house from a list of houses
- * assuming: user context.vars.user; houses context.vars.housesLst
+ * assuming: user context.vars.userid; houses context.vars.housesLst
  */
 function selectHouse(context, events, done) {
 	delete context.vars.value;
-	if( typeof context.vars.user !== 'undefined' && typeof context.vars.housesLst !== 'undefined' && 
+	if( typeof context.vars.userid !== 'undefined' && typeof context.vars.housesLst !== 'undefined' &&
 			context.vars.housesLst.constructor == Array && context.vars.housesLst.length > 0) {
 		let house = context.vars.housesLst.sample()
 		context.vars.houseId = house.id;
-		context.vars.owner = house.owner;
+		context.vars.owner = house.ownerId;
 	} else
 		delete context.vars.houseId
 	return done()
@@ -216,13 +230,21 @@ function selectHouse(context, events, done) {
 
 /**
  * Select rental from a list of rentals
- * assuming: user context.vars.user; rentals context.vars.rentalsLst
+ * assuming: user context.vars.userid; rentals context.vars.rentalsLst
  */
 function selectRental(context, events, done) {
 	delete context.vars.value;
-	if( typeof context.vars.user !== 'undefined' && typeof context.vars.rentalsLst !== 'undefined' && 
+	if( typeof context.vars.userid !== 'undefined' && typeof context.vars.rentalsLst !== 'undefined' &&
 			context.vars.rentalsLst.constructor == Array && context.vars.rentalsLst.length > 0) {
-		let rental = context.vars.rentalsLst.sample()
+		let gotFree = false;
+		let rental;
+		while(!gotFree) {
+			let r = context.vars.rentalsLst.sample()
+			if(r.free) {
+				question = r;
+				gotFree = true;
+			}
+		}
 		context.vars.rentalId = rental.id;
 		context.vars.owner = rental.owner;
 		context.vars.houseId = rental.house;
@@ -233,16 +255,25 @@ function selectRental(context, events, done) {
 
 /**
  * Select question from a list of question
- * assuming: user context.vars.user; questions context.vars.questionLst
+ * assuming: user context.vars.userid; questions context.vars.questionLst
  */
 function selectQuestion(context, events, done) {
 	delete context.vars.value;
-	if( typeof context.vars.user !== 'undefined' && typeof context.vars.questionLst !== 'undefined' && 
+	if( typeof context.vars.userid !== 'undefined' && typeof context.vars.questionLst !== 'undefined' &&
 			context.vars.questionLst.constructor == Array && context.vars.questionLst.length > 0) {
-		let question = context.vars.questionLst.sample()
+		let gotUnanswered = false;
+		let question;
+		while(!gotUnanswered) {
+			let q = context.vars.questionLst.sample()
+			if(!q.answered) {
+				question = q;
+				gotUnanswered = true;
+			}
+		}
+
+		context.vars.replyId = "reply:" + question.id;
 		context.vars.questionId = question.id;
-		context.vars.owner = question.owner;
-		context.vars.houseId = question.house;
+		context.vars.houseId = question.HouseId;
 		context.vars.reply = `${faker.lorem.paragraph()}`;
 	} else
 		delete context.vars.questionId
@@ -262,7 +293,7 @@ function decideNextAction(context, events, done) {
 		context.vars.nextAction = 0; // select discount
 		context.vars.housesLst = context.vars.housesDiscountLst;
 	} else {
-		context.vars.nextAction = 1; // select location 
+		context.vars.nextAction = 1; // select location
 		context.vars.location = locations.sample();
 		context.vars.initDate = randomDate();
 		context.vars.endDate = context.vars.date;
@@ -274,6 +305,7 @@ function decideNextAction(context, events, done) {
 	else if( rnd < 0.45) {
 		context.vars.afterNextAction = 2; // post questions
 		context.vars.text = `${faker.lorem.paragraph()}`;
+		context.vars.questionId = `${faker.random.alpha(10)}`;
 	} else if( rnd < 0.60)
 		context.vars.afterNextAction = 3; // reserve
 	else
@@ -283,7 +315,7 @@ function decideNextAction(context, events, done) {
 
 
 /**
- * Return true with probability 20% 
+ * Return true with probability 20%
  */
 function random20(context, next) {
   const continueLooping = Math.random() < 0.2
@@ -291,7 +323,7 @@ function random20(context, next) {
 }
 
 /**
- * Return true with probability 50% 
+ * Return true with probability 50%
  */
 function random50(context, next) {
   const continueLooping = Math.random() < 0.5
@@ -299,7 +331,7 @@ function random50(context, next) {
 }
 
 /**
- * Return true with probability 70% 
+ * Return true with probability 70%
  */
 function random70(context, next) {
   const continueLooping = Math.random() < 0.7
@@ -307,7 +339,7 @@ function random70(context, next) {
 }
 
 /**
- * Return true with probability 70% 
+ * Return true with probability 70%
  */
 function random80(context, next) {
   const continueLooping = Math.random() < 0.8
@@ -315,7 +347,7 @@ function random80(context, next) {
 }
 
 /**
- * Return true with probability 70% 
+ * Return true with probability 70%
  */
 function random90(context, next) {
   const continueLooping = Math.random() < 0.9
