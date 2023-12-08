@@ -5,8 +5,7 @@ import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 import com.azure.core.credential.AzureKeyCredential;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobContainerClientBuilder;
+
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -72,14 +71,20 @@ public class DataLayer {
 
     String BlobStoreconnectionString = System.getenv("storageAccountConnectionString");
 
-    BlobContainerClient containerClient = new BlobContainerClientBuilder().connectionString(BlobStoreconnectionString).containerName("media").buildClient();
 
     CacheLayer cache;
 
+    MediaLayer media;
+
     //cognitive search
+
+    private static final boolean SearchEnabled = System.getenv("SEARCH_ENABLED") != null && System.getenv("SEARCH_ENABLED").equals("1");
     private static final String SearchServiceQueryKey = System.getenv("SEARCH_QUERY_KEY");
     private static final String SearchServiceUrl = System.getenv("SEARCH_URL");
     private static final String IndexName = System.getenv("SEARCH_INDEX");
+
+    private static final String MediaStorage = System.getenv("MEDIA_STORAGE");
+
     SearchOptions searchOptions;
     SearchClient searchClient;
 
@@ -90,6 +95,23 @@ public class DataLayer {
         questions = database.getCollection("questions", QuestionDAO.class);
         tombstone = database.getCollection("tombstone", DeleteTaskDAO.class);
         cache = new CacheLayer();
+        media = new MediaLayer(MediaLayer.StorageType.valueOf(MediaStorage));
+
+    }
+
+
+    //Media related
+
+    private boolean pictureExists(String photoId) {
+        return photoId.isEmpty() || media.mediaExists(photoId);
+    }
+
+    public byte[] getPhoto(String id) {
+        return media.readMedia(id);
+    }
+
+    public boolean uploadPhoto(String id, byte[] media) {
+        return this.media.writeMedia(id, media);
     }
 
 
@@ -131,9 +153,7 @@ public class DataLayer {
 
     // AUXILIARY METHODS
 
-    private boolean pictureExists(String photoId) {
-        return photoId.isEmpty() || containerClient.getBlobClient(photoId).exists();
-    }
+
 
     private boolean houseExists(String houseId) {
         if (cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class) != null)
@@ -313,6 +333,11 @@ public class DataLayer {
         houses.insertOne(House.toDAO(house));
 
         cache.addCache(CacheLayer.CacheType.HOUSE, house.getId(), house);
+
+        cache.removeCache(CacheLayer.CacheType.HOUSES_LOCATION, house.getLocation());
+        cache.removeCache(CacheLayer.CacheType.HOUSE_USER, house.getOwnerId());
+        cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
+        cache.removeCache(CacheLayer.CacheType.HOUSES, "houses");
 
         return house;
     }
@@ -497,7 +522,7 @@ public class DataLayer {
 
     public List<House> searchHouses(String query, String location) {
         List<House> found = new ArrayList<>();
-        if(SearchServiceQueryKey != null && SearchServiceUrl != null && IndexName != null) {
+        if(SearchEnabled && SearchServiceQueryKey != null && SearchServiceUrl != null && IndexName != null) {
             searchClient = new SearchClientBuilder().
                     credential(new AzureKeyCredential(SearchServiceQueryKey)).
                     endpoint(SearchServiceUrl).indexName(IndexName).
@@ -523,8 +548,8 @@ public class DataLayer {
     }
 
     public List<House> getDiscountHouses() {
-        //House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
-        //f (housesCached != null) return Arrays.asList(housesCached);
+        House[] housesCached = cache.readCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount", House[].class);
+        if (housesCached != null) return Arrays.asList(housesCached);
 
         HashMap<String, House> result = new HashMap<>();
         for (RentalDAO rental : rentals.find(new Document("free", true))) {
