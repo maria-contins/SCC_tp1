@@ -16,7 +16,7 @@ public class MainApplication extends Application
 		DataLayer dm = new DataLayer();
 		singletons.add(dm);
 		singletons.add(new HouseResource(dm));
-		singletons.add(new MediaResource());
+		singletons.add(new MediaResource(dm));
 		singletons.add(new ControlResource());
 		singletons.add(new UserResource(dm));
 		resources.add(GenericExceptionMapper.class);
