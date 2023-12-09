@@ -33,10 +33,10 @@ import scc.entities.User.Auth;
 import scc.exceptions.DuplicateException;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
+import scc.exceptions.UnauthorizedException;
 import scc.utils.Hash;
 
 
-import com.azure.core.credential.AzureKeyCredential;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchClientBuilder;
 import com.azure.search.documents.models.SearchOptions;
@@ -166,7 +166,7 @@ public class DataLayer {
         String nickname = auth.getNickname();
 
         User user = cache.readCache(CacheLayer.CacheType.USER, nickname, User.class);
-
+        
         if (user == null) {
             UserDAO userDAO = users.find(new Document("nickname", nickname)).first();
             if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
@@ -177,6 +177,9 @@ public class DataLayer {
 
             user = UserDAO.toUser(userDAO);
             cache.addCache(CacheLayer.CacheType.USER, nickname, user);
+        } else {
+            if (user.getPassword() == null || user.getPassword().isEmpty())
+                throw new ForbiddenException();
         }
 
         return user.getPassword().equals(Hash.of(password));
@@ -184,6 +187,9 @@ public class DataLayer {
 
     // FOR DEBUG
     public User getUser(String id) throws NotFoundException {
+        User user = cache.readCache(CacheLayer.CacheType.USER, id, User.class);
+        if (user != null) return user;
+
         UserDAO userDAO = users.find(eq("id", id)).first();
         if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
             throw new NotFoundException();
@@ -321,9 +327,6 @@ public class DataLayer {
         else {
             HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
             if (checkHouse != null && !checkHouse.isDeleted()) throw new DuplicateException();
-
-            assert checkHouse != null;
-            cache.addCache(CacheLayer.CacheType.HOUSE, checkHouse.getId(), checkHouse);
         }
 
         house.setDeleted(false);
@@ -359,7 +362,18 @@ public class DataLayer {
         return house;
     }
 
-    public House updateHouse(String id, House house) throws NotFoundException {
+    public House updateHouse(String id, House house, User userFromCookie) throws NotFoundException, UnauthorizedException, ForbiddenException {
+
+        House houseCache = cache.readCache(CacheLayer.CacheType.HOUSE, id, House.class);
+        if (houseCache == null) {
+            HouseDAO houseDAO = houses.find(new Document("id", id)).first();
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
+            if (!userFromCookie.getId().equals(houseDAO.getOwnerId())) throw new UnauthorizedException();
+
+        } else {
+            if (houseCache.isDeleted()) throw new NotFoundException(); // shouldn't be needed
+            if (!userFromCookie.getId().equals(houseCache.getOwnerId())) throw new UnauthorizedException();
+        }
 
         Document houseUpdate = new Document();
         if (house.getName() != null && !house.getName().isEmpty()) houseUpdate.append("name", house.getName());
@@ -450,19 +464,17 @@ public class DataLayer {
         return rental;
     }
 
-    public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException { //TODO
+    public Rental updateRental(String houseId, String rentalId, Rental rental, User userFromCookie) throws NotFoundException, ForbiddenException, UnauthorizedException { //TODO
 
         House house = cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class);
         if (house == null) {
             HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
-
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
+            if (!userFromCookie.getId().equals(houseDAO.getOwnerId())) throw new UnauthorizedException();
         } else {
             if (house.isDeleted()) throw new NotFoundException(); // shouldn't be needed
+            if (!userFromCookie.getId().equals(house.getOwnerId())) throw new UnauthorizedException();
         }
-
-        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
         Document rentalUpdate = new Document();
 
