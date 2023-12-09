@@ -71,7 +71,6 @@ public class DataLayer {
 
     String BlobStoreconnectionString = System.getenv("storageAccountConnectionString");
 
-
     CacheLayer cache;
 
     MediaLayer media;
@@ -133,13 +132,9 @@ public class DataLayer {
         // get from cache
         return this.cache.readCache(CacheLayer.CacheType.COOKIE, cookie.getValue(), Session.class);
     }
-
-
     public boolean hasAuth(Cookie cookie) {
         return this.sessionFromCookie(cookie) != null;
     }
-
-
 
     public boolean matchUserToCookie(Cookie cookie, String userId) {
         Session session = this.sessionFromCookie(cookie);
@@ -152,9 +147,6 @@ public class DataLayer {
 
 
     // AUXILIARY METHODS
-
-
-
     private boolean houseExists(String houseId) {
         if (cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class) != null)
             return true;
@@ -169,30 +161,32 @@ public class DataLayer {
         return users.find(new Document("id", userId)).first() != null;
     }
 
-    public boolean verifyUser(Auth auth) throws NotFoundException, ForbiddenException {
+    public boolean verifyUser(Auth auth) throws NotFoundException, ForbiddenException { // TODO
         String password = auth.getPassword();
         String nickname = auth.getNickname();
 
-        UserDAO userDAO = users.find(new Document("nickname", nickname)).first();
-        if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
-            throw new NotFoundException();
+        User user = cache.readCache(CacheLayer.CacheType.USER, nickname, User.class);
 
-        if (userDAO.getPassword() == null || userDAO.getPassword().isEmpty())
-            throw new ForbiddenException();
+        if (user == null) {
+            UserDAO userDAO = users.find(new Document("nickname", nickname)).first();
+            if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
+                throw new NotFoundException();
 
-        return userDAO.getPassword().equals(Hash.of(password));
+            if (userDAO.getPassword() == null || userDAO.getPassword().isEmpty())
+                throw new ForbiddenException();
+
+            user = UserDAO.toUser(userDAO);
+            cache.addCache(CacheLayer.CacheType.USER, nickname, user);
+        }
+
+        return user.getPassword().equals(Hash.of(password));
     }
 
     // FOR DEBUG
     public User getUser(String id) throws NotFoundException {
-
-        // look for user in cache
-        //if not found:
         UserDAO userDAO = users.find(eq("id", id)).first();
         if (userDAO == null || userDAO.isDeleted()) // or isDeleted?
             throw new NotFoundException();
-
-        //add user to cache
 
         return UserDAO.toUser(userDAO);
     }
@@ -320,10 +314,17 @@ public class DataLayer {
 
     // HOUSES
 
-    public House createHouse(House house) throws DuplicateException, NotFoundException {
+    public House createHouse(House house) throws DuplicateException, NotFoundException { // TODO
 
-        HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
-        if (checkHouse != null && !checkHouse.isDeleted()) throw new DuplicateException();
+        House houseCache = cache.readCache(CacheLayer.CacheType.HOUSE, house.getId(), House.class);
+        if (houseCache != null) throw new DuplicateException();
+        else {
+            HouseDAO checkHouse = houses.find(eq("id", house.getId())).first();
+            if (checkHouse != null && !checkHouse.isDeleted()) throw new DuplicateException();
+
+            assert checkHouse != null;
+            cache.addCache(CacheLayer.CacheType.HOUSE, checkHouse.getId(), checkHouse);
+        }
 
         house.setDeleted(false);
 
@@ -384,19 +385,18 @@ public class DataLayer {
     }
 
 
-    public House deleteHouse(String houseId, String userId) throws NotFoundException, ForbiddenException {
-
-        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null) throw new NotFoundException();
-        if (!houseDAO.getOwnerId().equals(userId)) throw new ForbiddenException();
+    public House deleteHouse(String houseId, String userId) throws NotFoundException, ForbiddenException { // TODO
+        //HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+       // if (houseDAO == null) throw new NotFoundException();
+       // if (!houseDAO.getOwnerId().equals(userId)) throw new ForbiddenException();
 
         Document doc = new Document("deleted", true);
         HouseDAO houseToDelete = houses.findOneAndUpdate(new Document("id", houseId), new Document("$set", doc));
 
         if (houseToDelete == null) throw new NotFoundException();
+        if (!houseToDelete.getOwnerId().equals(userId)) throw new ForbiddenException();
 
         cache.removeCache(CacheLayer.CacheType.HOUSE, houseId);
-
         cache.removeCache(CacheLayer.CacheType.HOUSE, houseId);
         cache.removeCache(CacheLayer.CacheType.HOUSES_LOCATION, houseToDelete.getLocation());
         cache.removeCache(CacheLayer.CacheType.HOUSE_USER, houseToDelete.getOwnerId());
@@ -423,25 +423,44 @@ public class DataLayer {
 
     // RENTALS
 
-    public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException {
+    public Rental createAvailable(String houseId, Rental rental) throws NotFoundException, ForbiddenException { // TODO
+
         if (!houseId.equals(rental.getHouseId())) throw new ForbiddenException();
-        HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
-        if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
-        if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
+        House house = cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class);
+        if (house == null) {
+            HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
+            if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
+            if (rental.getRenterId().equals(houseDAO.getOwnerId())) throw new ForbiddenException();
 
-        if (rental.getRenterId().equals(houseDAO.getOwnerId())) throw new ForbiddenException();
-        rental.setFree(true);
+        } else {
+            if (house.isDeleted()) throw new NotFoundException(); // shouldn't be needed
+            if (!house.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
+            if (rental.getRenterId().equals(house.getOwnerId())) throw new ForbiddenException();
 
+        }
         rentals.insertOne(Rental.toDAO(rental));
 
         cache.removeCache(CacheLayer.CacheType.RENTALS, houseId);
         if (!rental.getDiscount().isEmpty())
             cache.removeCache(CacheLayer.CacheType.HOUSES_DISCOUNTED, "discount");
 
+        cache.addCache(CacheLayer.CacheType.RENTALS, houseId, Rental[].class);
+
         return rental;
     }
 
-    public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException {
+    public Rental updateRental(String houseId, String rentalId, Rental rental) throws NotFoundException, ForbiddenException { //TODO
+
+        House house = cache.readCache(CacheLayer.CacheType.HOUSE, houseId, House.class);
+        if (house == null) {
+            HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
+            if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();if (!houseDAO.getOwnerId().equals(rental.getOwnerId())) throw new ForbiddenException();
+
+        } else {
+            if (house.isDeleted()) throw new NotFoundException(); // shouldn't be needed
+        }
+
         HouseDAO houseDAO = houses.find(new Document("id", houseId)).first();
         if (houseDAO == null || houseDAO.isDeleted()) throw new NotFoundException();
 
