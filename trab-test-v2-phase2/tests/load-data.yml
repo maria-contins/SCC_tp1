@@ -1,0 +1,117 @@
+config:
+  target: 'https://scc-backend-575031.azurewebsites.net/rest'
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+  processor: "./test-utils.js"
+  variables:
+     metricsProcessEndpoint : "myProcessEndpoint"  # function used to aggregate endpoints for statistics
+  phases:
+  - name: "Create users"    # Create users
+    duration: 1
+    arrivalCount: 1
+
+scenarios:
+  - name: 'Create users'
+    weight: 1
+    flow:
+      - loop:                            # let's create 950 users - loop ... count
+        - post:                          # First: post image for the user
+            url: "/media"
+            headers:
+              Content-Type: application/octet-stream
+              Accept: application/json
+            beforeRequest: "uploadImageBody"
+            capture: 
+              regexp: "(.+)"
+              as: "imageId"              # capture the reply as image id to be used in user creation
+        - function: "genNewUser"         # Generate the needed information for the user
+        - post:
+            url: "/users"
+            headers:
+              Content-Type: application/json
+              Accept: application/json
+            json:
+              id: "{{ userid }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
+              photoId: "{{ imageId }}"
+#              houseIds: []
+            afterResponse: "genNewUserReply"    # capture result and store in file
+        count: 250
+      - loop:                            # let's create 50 users - loop ... count
+        - post:                          # First: post image for the user
+            url: "/media"
+            headers:
+              Content-Type: application/octet-stream
+              Accept: application/json
+            beforeRequest: "uploadImageBody"
+            capture: 
+              regexp: "(.+)"
+              as: "imageId"              # capture the reply as image id to be used in user creation
+        - function: "genNewUser"         # Generate the needed information for the user
+        - post:
+            url: "/users"
+            headers:
+              Content-Type: application/json
+              Accept: application/json
+            json:
+              id: "{{ userid }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
+              photoId: "{{ imageId }}"
+#              houseIds: []
+            afterResponse: "genNewUserReply"    # capture result and store in file
+        - post:
+            url: "/users/auth"
+            headers:
+              Content-Type: application/json
+            json:
+              id: "{{ userid }}"
+              nickname: "{{ name }}"
+              password: "{{ pwd }}"
+        - loop:                            # let's create 50 users - loop ... count
+          - post:                          # First: post image for the house
+              url: "/media"
+              headers:
+                Content-Type: application/octet-stream
+                Accept: application/json
+              beforeRequest: "uploadImageBody"
+              capture: 
+                regexp: "(.+)"
+                as: "imageId"              # capture the reply as image id to be used in house creation
+          - function: "genNewHouse"         # Generate the needed information for the house
+          - post:
+              url: "/houses"
+              headers:
+                Content-Type: application/json
+                Accept: application/json
+              json:
+                id: "{{ houseid }}"
+                name: "{{ name }}"
+                location: "{{ location }}"
+                description: "{{ description }}"
+                ownerId: "{{ userid }}"
+                media: ["{{ imageId }}"]
+              capture: 
+                json: "$.id"
+                as: "houseid"              # capture the house id to be used in house creation
+          - function: "genRentalId"
+          - post:                          # make this house available
+              url: "/houses/{{ houseid }}/rentals/availability"
+              headers:
+                Content-Type: application/json
+                Accept: application/json
+              json:
+                id: "{{ rentalId }}"
+                houseId: "{{ houseid }}"
+                renterId: ""
+                price: "{{ cost }}"
+                discount: "{{ discount }}"
+                fromDate: "12-2023"
+                toDate: "12-2024"
+                ownerId: "{{ userid }}"
+                
+          whileTrue: "random90"
+        count: 250
+
