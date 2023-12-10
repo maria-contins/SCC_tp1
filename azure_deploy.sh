@@ -13,7 +13,7 @@ printf "{
             \"type\": \"Microsoft.DocumentDB/databaseAccounts\",
             \"apiVersion\": \"2021-07-01-preview\",
             \"name\": \"$COSMOS_DB_ACCOUNT_NAME\",
-            \"location\": \"Canada Central\",
+            \"location\": \"West Europe\",
             \"tags\": {
                 \"defaultExperience\": \"Core (SQL)\",
                 \"hidden-cosmos-mmspecial\": \"\"
