@@ -14,7 +14,7 @@ RUN npm install -g node-fetch --save
 
 RUN npm install -g https://github.com/preguica/artillery-plugin-metrics-by-endpoint.git
 
-ENV APPLICATION_URL "http://20.67.150.11/scc-tp1-1.0/rest"
+#ENV APPLICATION_URL "http://4.245.106.32/scc-tp1-1.0/rest"
 
 COPY ./tests /usr/app/tests
 

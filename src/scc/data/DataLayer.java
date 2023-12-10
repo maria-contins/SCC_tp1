@@ -88,6 +88,19 @@ public class DataLayer {
     SearchClient searchClient;
 
     public DataLayer() {
+        database.createCollection("users");
+        users = database.getCollection("users", UserDAO.class);
+        database.createCollection("houses");
+        houses = database.getCollection("houses", HouseDAO.class);
+        database.createCollection("rentals");
+        rentals = database.getCollection("rentals", RentalDAO.class);
+        database.createCollection("questions");
+        questions = database.getCollection("questions", QuestionDAO.class);
+        database.createCollection("tombstone");
+        tombstone = database.getCollection("tombstone", DeleteTaskDAO.class);
+        cache = new CacheLayer();
+        media = new MediaLayer(MediaLayer.StorageType.valueOf(MediaStorage));
+
         users = database.getCollection("users", UserDAO.class);
         houses = database.getCollection("houses", HouseDAO.class);
         rentals = database.getCollection("rentals", RentalDAO.class);
