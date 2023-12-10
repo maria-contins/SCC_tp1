@@ -106,7 +106,7 @@ scenarios:
               Content-Type: application/json
             json:
               id: "{{ replyId }}"
-              HouseId: "{{ houseId }}"
+              houseId: "{{ houseId }}"
               authorId: "{{ userid }}"
               body: "{{ reply }}"
               repliedToId: "{{ questionId }}"
@@ -184,7 +184,7 @@ scenarios:
               Content-Type: application/json
             json:
               id: "{{ questionId }}"
-              HouseId: "{{ houseId }}"
+              houseId: "{{ houseId }}"
               authorId: "{{ userid }}"
               body: "{{ text }}"
             ifTrue: "houseId and afterNextAction == 2"
