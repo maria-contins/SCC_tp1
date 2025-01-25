@@ -10,6 +10,7 @@ import scc.entities.House.House;
 import scc.entities.Question.Question;
 import scc.entities.Rental.Rental;
 import scc.entities.User.Renter;
+import scc.entities.User.User;
 import scc.exceptions.*;
 import scc.exceptions.ForbiddenException;
 import scc.exceptions.NotFoundException;
@@ -43,6 +44,24 @@ public class HouseResource {
         }
     }
 
+    @PATCH
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public House updateHouse(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, House house) {
+        try {
+            //if (!dataLayer.matchUserToCookie(cookie, house.getOwnerId()))
+                //throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            return dataLayer.updateHouse(id, house, getUserFromCookie(cookie));
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        } catch (ForbiddenException e) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (UnauthorizedException e) {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+        }
+    }
+
     @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -70,21 +89,6 @@ public class HouseResource {
             return dataLayer.getDiscountHouses();
         } else
             return dataLayer.getAllHouses();
-    }
-
-    @PATCH
-    @Path("/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public House updateHouse(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, House house) {
-        try {
-            if (!dataLayer.matchUserToCookie(cookie, house.getOwnerId())) {
-                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
-            }
-            return dataLayer.updateHouse(id, house);
-        } catch (NotFoundException e) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        }
     }
 
     @DELETE
@@ -157,12 +161,23 @@ public class HouseResource {
         try {
             if (!dataLayer.matchUserToCookie(cookie, rental.getOwnerId()))
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED);
-
             return dataLayer.createAvailable(id, rental);
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+    }
+
+    private User getUserFromCookie(Cookie cookie) {
+        try {
+            String userId = dataLayer.getUserIdFromCookie(cookie);
+            if (userId == null) {
+                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            }
+            return dataLayer.getUser(userId);
+        } catch (NotFoundException e) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
 
@@ -173,14 +188,16 @@ public class HouseResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Rental updateRental(@CookieParam(SCC_SESSION) Cookie cookie, @PathParam("id") String id, @PathParam("rentalId") String rentalId, Rental rental) {
         try {
-            if (!dataLayer.matchUserToCookie(cookie, rental.getOwnerId()))
-                throw new WebApplicationException(Response.Status.UNAUTHORIZED);
+            //if (!dataLayer.matchUserToCookie(cookie, rental.getOwnerId()))
+                //throw new WebApplicationException(Response.Status.UNAUTHORIZED);
 
-            return dataLayer.updateRental(id, rentalId, rental);
+            return dataLayer.updateRental(id, rentalId, rental, getUserFromCookie(cookie));
         } catch (NotFoundException e) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         } catch (ForbiddenException e) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (UnauthorizedException e) {
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED);
         }
     }
 

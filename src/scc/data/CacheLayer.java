@@ -8,8 +8,10 @@ public class CacheLayer {
 
         private static final String RedisKey = System.getenv("REDIS_KEY");
 
+        private static final boolean RedisSSL = System.getenv("REDIS_SSL") != null && System.getenv("REDIS_SSL").equals("1");
 
-        private static final boolean CACHE_ON = System.getenv("CACHE_ON").equals("1");
+
+        private static final boolean CACHE_ON = System.getenv("CACHE_ON") != null && System.getenv("CACHE_ON").equals("1");
 
         public enum CacheType {
             HOUSE, COOKIE, HOUSES_DISCOUNTED, HOUSES_LOCATION, HOUSE_USER, USER, QUESTION_LIST, RENTALS, HOUSES
@@ -47,9 +49,13 @@ public class CacheLayer {
             poolConfig.setTestWhileIdle(true);
             poolConfig.setNumTestsPerEvictionRun(3);
             poolConfig.setBlockWhenExhausted(true);
-            instance = new JedisPool(poolConfig, RedisHostname, 6380, 1000, RedisKey, true);
-            return instance;
 
+            if(RedisSSL)
+                instance = new JedisPool(poolConfig, RedisHostname, 6380, 1000, RedisKey, true);
+            else
+                instance = new JedisPool(poolConfig, RedisHostname, 6379);
+
+            return instance;
         }
 
 

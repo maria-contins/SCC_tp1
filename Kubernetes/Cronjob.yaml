@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: garbageCollect
+spec:
+  schedule: "*/2 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: garbageCollect
+            image: mariacontins/scc57503-cronfun
+            env:
+            - name: mongoConnectionString
+              value: "mongodb://root:root@mongo:27017/"
+            - name: DB_NAME
+              value: "RentalApp"
+            imagePullPolicy: IfNotPresent
+          restartPolicy: Never

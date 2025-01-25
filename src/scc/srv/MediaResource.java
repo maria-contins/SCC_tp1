@@ -2,6 +2,7 @@ package scc.srv;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import scc.data.DataLayer;
 import scc.utils.Hash;
 
 import java.util.ArrayList;
@@ -23,12 +24,12 @@ import com.azure.storage.blob.models.BlobItem;
 @Path("/media")
 public class MediaResource
 {
-    String storageConnectionString = System.getenv("storageAccountConnectionString");
 
-    BlobContainerClient containerClient = new BlobContainerClientBuilder()
-            .connectionString(storageConnectionString)
-            .containerName("media")
-            .buildClient();
+    private DataLayer dataLayer;
+
+    public MediaResource(DataLayer dataLayer) {
+        this.dataLayer = dataLayer;
+    }
 
     /**
      * Post a new image.The id of the image is its hash.
@@ -39,13 +40,9 @@ public class MediaResource
     @Produces(MediaType.APPLICATION_JSON)
     public String upload(byte[] contents) {
         String key = Hash.of(contents);
-        try {
-            if (!containerClient.getBlobClient(key).exists()) {
-                BlobClient blob = containerClient.getBlobClient(key);
-                blob.upload(BinaryData.fromBytes(contents));
-            }
+        if(dataLayer.uploadPhoto(key, contents)){
             return key;
-        } catch (Exception e) {
+        }else{
             throw new WebApplicationException(Response.Status.CONFLICT);
         }
     }
@@ -58,27 +55,26 @@ public class MediaResource
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public byte[] download(@PathParam("id") String id) {
-        try {
-            BlobClient blob = containerClient.getBlobClient(id);
-            return blob.downloadContent().toBytes();
-        } catch (Exception e) {
+        byte[] image = dataLayer.getPhoto(id);
+        if(image == null){
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
+        return image;
     }
 
-    /**
-     * Lists the ids of images stored.
-     */
-    @GET
-    @Path("/")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<String> list() {
-        ArrayList<String> blobs = new ArrayList<>();
-        for (BlobItem item : containerClient.listBlobs()) {
-            blobs.add(item.getName());
-        }
-        return blobs;
-    }
-
+//    /**
+//     * Lists the ids of images stored.
+//     */
+//    @GET
+//    @Path("/")
+//    @Produces(MediaType.APPLICATION_JSON)
+//    public List<String> list() {
+//        ArrayList<String> blobs = new ArrayList<>();
+//        for (BlobItem item : containerClient.listBlobs()) {
+//            blobs.add(item.getName());
+//        }
+//        return blobs;
+//    }
+//
 
 }
